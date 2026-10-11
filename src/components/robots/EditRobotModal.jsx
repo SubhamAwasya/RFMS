@@ -32,21 +32,19 @@ export default function EditRobotModal({
   const [buildingId, setBuildingId] = useState("bldg-1");
   const [floorId, setFloorId] = useState("floor-g");
   const [location, setLocation] = useState("");
-  const [status, setStatus] = useState("Idle");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Sync form state when robot changes
+  // Sync form state ONLY when modal opens or target robot id changes
   useEffect(() => {
-    if (robot) {
+    if (isOpen && robot) {
       setName(robot.name || "");
       setType(robot.type || "Forklift AGV");
-      setBuildingId(robot.buildingId || fleetCtx?.activeBuildingId || "bldg-1");
-      setFloorId(robot.floorId || fleetCtx?.activeFloorId || "floor-g");
+      setBuildingId(robot.buildingId || "bldg-1");
+      setFloorId(robot.floorId || "floor-g");
       setLocation(robot.location || "");
-      setStatus(robot.status || "Idle");
       setShowDeleteConfirm(false);
     }
-  }, [robot, isOpen, fleetCtx?.activeBuildingId, fleetCtx?.activeFloorId]);
+  }, [isOpen, robot?.id]);
 
   if (!robot) return null;
 
@@ -70,7 +68,6 @@ export default function EditRobotModal({
       buildingId,
       floorId,
       location: resolvedLocation,
-      status,
     };
 
     if (onSave) {
@@ -105,7 +102,7 @@ export default function EditRobotModal({
                   </span>
                 </Dialog.Title>
                 <Dialog.Description className="text-xs text-slate-500 dark:text-slate-400">
-                  Update vehicle assignment, staging location, and operational state.
+                  Update vehicle assignment and staging location.
                 </Dialog.Description>
               </div>
             </div>
@@ -156,40 +153,19 @@ export default function EditRobotModal({
               </div>
             </div>
 
-            {/* Type & Operational Status */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Vehicle Type
-                </label>
-                <select
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none"
-                >
-                  <option value="Forklift AGV">Forklift AGV</option>
-                  <option value="Flatbed Payload Carrier AGV">Flatbed Payload Carrier AGV</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Operational State
-                </label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none font-medium"
-                >
-                  <option value="Auto-Pilot (Looping)">Auto-Pilot (Looping)</option>
-                  <option value="Manual Teleop">Manual Teleop</option>
-                  <option value="Idle">Idle (Available)</option>
-                  <option value="Charging">Charging (Docked)</option>
-                  <option value="Waiting">Waiting (At Station)</option>
-                  <option value="Maintenance">Maintenance Required</option>
-                  <option value="Offline">Offline / Standby</option>
-                </select>
-              </div>
+            {/* Vehicle Type */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Vehicle Type
+              </label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none"
+              >
+                <option value="Forklift AGV">Forklift AGV</option>
+                <option value="Flatbed Payload Carrier AGV">Flatbed Payload Carrier AGV</option>
+              </select>
             </div>
 
             {/* Facility & Floor Level Assignment */}

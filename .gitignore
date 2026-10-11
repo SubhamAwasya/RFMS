@@ -43,3 +43,6 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Internal / Documentation
+Explanation.md
+EXPLANATION.md

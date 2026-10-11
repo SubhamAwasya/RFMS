@@ -1,5 +1,5 @@
 import React from "react";
-import { ZoomIn, ZoomOut, RotateCcw, Route, Bot } from "lucide-react";
+import { ZoomIn, ZoomOut, RotateCcw, Route, Bot, Square, MapPin } from "lucide-react";
 
 export default function MapToolbar({
   zoom,
@@ -11,6 +11,8 @@ export default function MapToolbar({
 }) {
   const isPathsActive = Boolean(layers?.showPaths);
   const isAgvsActive = Boolean(layers?.showAgvs);
+  const isZonesActive = Boolean(layers?.showZones);
+  const isStationsActive = Boolean(layers?.showStations);
 
   return (
     <div
@@ -18,22 +20,62 @@ export default function MapToolbar({
       onMouseDown={(e) => e.stopPropagation()}
       onTouchStart={(e) => e.stopPropagation()}
     >
-      {/* Layer Visibility Toggles: Paths & AGVs */}
+      {/* Layer Visibility Toggles */}
       {layers && (
         <div className="flex items-center gap-1">
+          {/* Zones Toggle */}
+          <button
+            type="button"
+            onClick={() => onToggleLayer("zones")}
+            className={`px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold ${
+              isZonesActive
+                ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent"
+            }`}
+            title="Toggle Facility Operational Zones"
+          >
+            <Square className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Zones</span>
+            <span
+              className={`w-1.5 h-1.5 rounded-full transition-all ${
+                isZonesActive ? "bg-amber-500" : "bg-slate-300 dark:bg-slate-600"
+              }`}
+            />
+          </button>
+
+          {/* Stations Toggle */}
+          <button
+            type="button"
+            onClick={() => onToggleLayer("stations")}
+            className={`px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold ${
+              isStationsActive
+                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent"
+            }`}
+            title="Toggle Charging & Docking Stations"
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Stations</span>
+            <span
+              className={`w-1.5 h-1.5 rounded-full transition-all ${
+                isStationsActive ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"
+              }`}
+            />
+          </button>
+
           {/* Paths Toggle */}
           <button
             type="button"
             onClick={() => onToggleLayer("paths")}
-            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold ${
+            className={`px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold ${
               isPathsActive
-                ? "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 font-bold shadow-2xs"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent"
+                ? "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 font-bold"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent"
             }`}
             title="Toggle All Paths Visibility"
           >
             <Route className="w-3.5 h-3.5" />
-            <span>Paths</span>
+            <span className="hidden sm:inline">Paths</span>
             <span
               className={`w-1.5 h-1.5 rounded-full transition-all ${
                 isPathsActive
@@ -47,15 +89,15 @@ export default function MapToolbar({
           <button
             type="button"
             onClick={() => onToggleLayer("agvs")}
-            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold ${
+            className={`px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold ${
               isAgvsActive
-                ? "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-bold shadow-2xs"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent"
+                ? "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-bold"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent"
             }`}
             title="Toggle Fleet AGVs Visibility"
           >
             <Bot className="w-3.5 h-3.5" />
-            <span>AGVs</span>
+            <span className="hidden sm:inline">AGVs</span>
             <span
               className={`w-1.5 h-1.5 rounded-full transition-all ${
                 isAgvsActive

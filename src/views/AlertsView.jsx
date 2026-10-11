@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { AlertTriangle, Clock } from "lucide-react";
+import { AlertTriangle, Clock, Zap, Trash2, Bell, CheckCircle2 } from "lucide-react";
 import { useFleet } from "../context/FleetContext";
 import { useNavigation } from "../context/NavigationContext";
 
@@ -34,28 +34,87 @@ export default function AlertsView({
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto p-4 sm:p-6 space-y-5">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200 dark:border-slate-800">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            Alerts
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-          </h2>
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-red-500/10 text-red-500 dark:text-red-400">
+            <Bell className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              Fleet Alerts &amp; Telemetry
+              {alerts.length > 0 && (
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800">
+                  {alerts.length}
+                </span>
+              )}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Live automated sensor warnings, safety field violations, and energy telemetry
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold overflow-x-auto max-w-full">
-          {["ALL", "danger", "warning", "info"].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-colors ${
-                filter === f
-                  ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+        {/* Action Controls & Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Quick Trigger Random Alert */}
+          <button
+            type="button"
+            onClick={() => fleetCtx?.generateRandomAlert?.()}
+            className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
+            title="Randomly generates a realistic industrial telemetry alert from an active robot in the fleet"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>Generate Random Alert</span>
+          </button>
+
+          {/* Auto-Generation Background Timer Toggle */}
+          <button
+            type="button"
+            onClick={() => fleetCtx?.setAutoAlertsEnabled?.(!fleetCtx?.autoAlertsEnabled)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${
+              fleetCtx?.autoAlertsEnabled
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500"
+            }`}
+            title="Toggles background timer that automatically generates random robot alerts every ~25 seconds"
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                fleetCtx?.autoAlertsEnabled ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
               }`}
+            />
+            <span>Auto-Gen: {fleetCtx?.autoAlertsEnabled ? "Active" : "Paused"}</span>
+          </button>
+
+          {/* Clear All */}
+          {alerts.length > 0 && (
+            <button
+              type="button"
+              onClick={() => fleetCtx?.clearAllAlerts?.()}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-xs border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              {f === "ALL" ? "All Alerts" : f.charAt(0).toUpperCase() + f.slice(1)}
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear</span>
             </button>
-          ))}
+          )}
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold overflow-x-auto">
+            {["ALL", "danger", "warning", "info"].map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFilter(f)}
+                className={`px-2.5 py-1 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
+                  filter === f
+                    ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                {f === "ALL" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -96,6 +155,11 @@ export default function AlertsView({
                   <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                     {alert.level}
                   </span>
+                  {alert.category && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                      {alert.category}
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-slate-700 dark:text-slate-300 mt-1 font-medium">
                   {alert.message}

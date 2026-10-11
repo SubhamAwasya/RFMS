@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import LiveMapHeader from "../components/map/LiveMapHeader";
 import LiveMapCanvas from "../components/map/LiveMapCanvas";
 import AgvControlSidePanel from "../components/map/AgvControlSidePanel";
@@ -41,6 +41,17 @@ export default function LiveMapView({
     setSelectedAgvId(id);
     if (navCtx?.setMapSelectedAgvId) {
       navCtx.setMapSelectedAgvId(id);
+    }
+    if (id) {
+      const robot = agvs.find((a) => a.id === id);
+      if (robot) {
+        if (robot.buildingId && robot.buildingId !== fleetCtx?.activeBuildingId) {
+          fleetCtx?.selectBuilding?.(robot.buildingId);
+        }
+        if (robot.floorId && robot.floorId !== fleetCtx?.activeFloorId) {
+          fleetCtx?.setActiveFloorId?.(robot.floorId);
+        }
+      }
     }
   };
 
@@ -89,6 +100,14 @@ export default function LiveMapView({
     }
     if (layerId === "agvs") {
       setLayers((l) => ({ ...l, showAgvs: !l.showAgvs }));
+      return;
+    }
+    if (layerId === "zones") {
+      setLayers((l) => ({ ...l, showZones: !l.showZones }));
+      return;
+    }
+    if (layerId === "stations") {
+      setLayers((l) => ({ ...l, showStations: !l.showStations }));
       return;
     }
   };
@@ -231,6 +250,12 @@ export default function LiveMapView({
   const isForkliftOnActiveFloor = forklift && forklift.floorId === activeFloor.id;
   const activeRoute = fleetCtx?.activeRoute || [];
 
+  const floorAgvs = useMemo(() => {
+    return (agvs || []).filter(
+      (robot) => robot && (!robot.floorId || robot.floorId === activeFloor.id)
+    );
+  }, [agvs, activeFloor.id]);
+
   // Ensure any active obstacle from previous sessions is cleared
   useEffect(() => {
     if (fleetCtx?.simulatedObstacle) {
@@ -248,7 +273,7 @@ export default function LiveMapView({
         floors={fleetCtx?.floors}
         activeFloorId={fleetCtx?.activeFloorId}
         onSelectFloor={(id) => fleetCtx?.setActiveFloorId(id)}
-        agvCount={agvs.length}
+        agvCount={floorAgvs.length}
       />
 
       <div className="flex-1 flex overflow-hidden relative min-h-0">

@@ -1,15 +1,11 @@
 import React, { useRef, useState, useEffect } from "react";
-import {
-  RotateCcw,
-  Trash2,
-  Navigation,
-  Sparkles,
-  Move,
-} from "lucide-react";
+import { Move } from "lucide-react";
 import FloorPlanZones from "./FloorPlanZones";
 import RouteTimeline from "./RouteTimeline";
+import WaypointPlannerHeader from "./WaypointPlannerHeader";
+import WaypointCanvasStations from "./WaypointCanvasStations";
+import WaypointCanvasMarkers from "./WaypointCanvasMarkers";
 import { getSvgCoordinates } from "../../utils/svg";
-import { ROUTE_PRESETS } from "../../constants";
 import { useFleet } from "../../context/FleetContext";
 
 export default function WaypointRoutePlanner({
@@ -69,7 +65,12 @@ export default function WaypointRoutePlanner({
     }
     if (waypoints.length >= 10) return;
 
-    const coords = getSvgCoordinates(svgRef.current, e.clientX, e.clientY, { minX: 25, maxX: 515, minY: 25, maxY: 375 });
+    const coords = getSvgCoordinates(svgRef.current, e.clientX, e.clientY, {
+      minX: 25,
+      maxX: 515,
+      minY: 25,
+      maxY: 375,
+    });
     if (!coords) return;
 
     const endIdx = waypoints.findIndex((w) => w.type === "end");
@@ -110,7 +111,12 @@ export default function WaypointRoutePlanner({
       ) {
         hasDraggedRef.current = true;
       }
-      const coords = getSvgCoordinates(svgRef.current, e.clientX, e.clientY, { minX: 25, maxX: 515, minY: 25, maxY: 375 });
+      const coords = getSvgCoordinates(svgRef.current, e.clientX, e.clientY, {
+        minX: 25,
+        maxX: 515,
+        minY: 25,
+        maxY: 375,
+      });
       if (!coords) return;
       setWaypoints((prev) =>
         prev.map((w) => (w.id === draggingId ? { ...w, x: coords.x, y: coords.y } : w))
@@ -176,163 +182,71 @@ export default function WaypointRoutePlanner({
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 flex flex-col justify-between space-y-4">
-      {/* Header Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-        <div>
-          <div className="flex items-center gap-2">
-            <Navigation className="w-4 h-4 text-blue-500" />
-            <span className="text-sm font-bold text-slate-900 dark:text-white">
-              Waypoint Route Planner
-            </span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold border border-blue-200 dark:border-blue-500/20">
-              {waypoints.length} / 10 Points
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-            Click map to add waypoint • Drag pins to reposition
-          </p>
-        </div>
+      {/* Header, Presets & Station Snapping Bar */}
+      <WaypointPlannerHeader
+        waypoints={waypoints}
+        onUndo={handleUndo}
+        onResetWaypoints={onResetWaypoints}
+        activePreset={activePreset}
+        onApplyPreset={onApplyPreset}
+        floorStations={floorStations}
+        onSnapToStation={handleSnapToStation}
+      />
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleUndo}
-            disabled={waypoints.filter((w) => w.type === "mid").length === 0}
-            className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1 transition-colors"
-            title="Undo last added waypoint"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Undo</span>
-          </button>
-          <button
-            type="button"
-            onClick={onResetWaypoints}
-            className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-500/15 flex items-center gap-1 transition-colors"
-            title="Reset waypoints to Start and End only"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Reset</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Quick Preset Corridors */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-        <span className="text-slate-400 shrink-0 flex items-center gap-1 font-medium">
-          <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Presets:
-        </span>
-        {ROUTE_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            onClick={() => onApplyPreset(preset)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium border shrink-0 transition-colors ${
-              activePreset === preset.id
-                ? "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30 font-semibold"
-                : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-            }`}
-          >
-            {preset.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Placed Floor Stations Bar */}
-      {floorStations.length > 0 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-          <span className="text-slate-400 shrink-0 font-medium">
-            Facility Stations:
-          </span>
-          {floorStations.map((stn) => (
-            <button
-              key={stn.id}
-              type="button"
-              onClick={() => handleSnapToStation(stn)}
-              className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-500/10 text-slate-700 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-300 border border-slate-200 dark:border-slate-700 text-xs font-semibold shrink-0 transition-colors flex items-center gap-1"
-            >
-              <span>📍</span>
-              <span>{stn.name}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* SVG Map Canvas */}
-      <div
-        className={`flex-1 min-h-[350px] bg-slate-50 dark:bg-[#0b0d13] rounded-xl relative overflow-hidden border border-slate-200 dark:border-slate-800 transition-colors flex flex-col justify-center items-center ${
-          draggingId ? "cursor-grabbing" : "cursor-crosshair"
-        }`}
-      >
+      {/* Interactive CAD Route Planner SVG Canvas */}
+      <div className="relative w-full rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <svg
           ref={svgRef}
           viewBox="0 0 540 400"
+          className="w-full h-auto cursor-crosshair select-none"
           onClick={handleSvgClick}
           onMouseMove={handleSvgMouseMove}
           onMouseLeave={handleSvgMouseLeave}
-          className="w-full h-full select-none block"
-          style={{ touchAction: "none" }}
         >
-          {/* Floor Plan Areas & Grid */}
+          {/* Subtle Grid Pattern */}
+          <defs>
+            <pattern
+              id="plannerGrid"
+              width="20"
+              height="20"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M 20 0 L 0 0 0 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="0.5"
+                className="text-slate-200 dark:text-slate-800"
+              />
+            </pattern>
+            <filter id="pin-shadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.25" />
+            </filter>
+          </defs>
+
+          {/* Grid Background */}
+          <rect width="540" height="400" fill="url(#plannerGrid)" />
+
+          {/* Structural Layout Walls */}
+          <rect
+            x="25"
+            y="25"
+            width="490"
+            height="350"
+            fill="none"
+            className="stroke-slate-300 dark:stroke-slate-700"
+            strokeWidth="1.5"
+            rx="6"
+          />
+
+          {/* Standard Facility Zones */}
           <FloorPlanZones />
 
-          {/* Placed Floor Stations Visual Pins */}
-          <g id="placed-floor-stations">
-            {floorStations.map((stn) => {
-              const mappedX = Math.round(
-                stn.x > 540 ? (stn.x * 500) / 1000 + 20 : stn.x
-              );
-              const mappedY = Math.round(
-                stn.y > 400 ? (stn.y * 360) / 650 + 20 : stn.y
-              );
-              const isCharger = stn.type === "charger";
-              const isElevator = stn.type === "elevator";
-
-              return (
-                <g
-                  key={stn.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSnapToStation(stn);
-                  }}
-                  className="cursor-pointer group"
-                >
-                  <circle
-                    cx={mappedX}
-                    cy={mappedY}
-                    r="13"
-                    className={
-                      isCharger
-                        ? "fill-amber-500/15 stroke-amber-500 group-hover:fill-amber-500/30"
-                        : isElevator
-                        ? "fill-purple-500/15 stroke-purple-500 group-hover:fill-purple-500/30"
-                        : "fill-blue-500/15 stroke-blue-500 group-hover:fill-blue-500/30"
-                    }
-                    strokeWidth="1.5"
-                  />
-                  <circle
-                    cx={mappedX}
-                    cy={mappedY}
-                    r="4"
-                    className={
-                      isCharger
-                        ? "fill-amber-500"
-                        : isElevator
-                        ? "fill-purple-500"
-                        : "fill-blue-500"
-                    }
-                  />
-                  <text
-                    x={mappedX}
-                    y={mappedY - 15}
-                    textAnchor="middle"
-                    className="fill-slate-600 dark:fill-slate-300 font-bold text-[8.5px] pointer-events-none select-none"
-                  >
-                    {stn.name}
-                  </text>
-                </g>
-              );
-            })}
-          </g>
+          {/* Placed Facility Stations with High-Tech Dock Icons */}
+          <WaypointCanvasStations
+            floorStations={floorStations}
+            onSnapToStation={handleSnapToStation}
+          />
 
           {/* Waypoint Polyline (Glow + Dashed Stroke) */}
           <polyline
@@ -424,84 +338,11 @@ export default function WaypointRoutePlanner({
           )}
 
           {/* Waypoint Pins & Draggable Handles */}
-          {waypoints.map((w, index) => {
-            const isStart = w.type === "start";
-            const isEnd = w.type === "end";
-            const isDraggingThis = draggingId === w.id;
-            const pinColor = isStart ? "#10b981" : isEnd ? "#ef4444" : "#3b82f6";
-            const symbol = isStart ? "A" : isEnd ? "B" : `${index}`;
-
-            return (
-              <g
-                key={w.id}
-                onMouseDown={(e) => handleWaypointMouseDown(e, w.id)}
-                className="cursor-grab active:cursor-grabbing group select-none"
-              >
-                {/* Active Drag Halo */}
-                {isDraggingThis && (
-                  <circle
-                    cx={w.x}
-                    cy={w.y}
-                    r={20}
-                    fill={pinColor}
-                    opacity="0.25"
-                    className="animate-pulse"
-                  />
-                )}
-
-                {/* Outer Pin Circle */}
-                <circle
-                  cx={w.x}
-                  cy={w.y}
-                  r={isStart || isEnd ? 11 : 9.5}
-                  fill={pinColor}
-                  stroke="#ffffff"
-                  strokeWidth="2.5"
-                  filter="url(#pin-shadow)"
-                  className="transition-transform group-hover:scale-110"
-                />
-
-                {/* Step Identifier Inside Pin */}
-                <text
-                  x={w.x}
-                  y={w.y + (isStart || isEnd ? 3.5 : 3.5)}
-                  textAnchor="middle"
-                  fill="#ffffff"
-                  fontSize={isStart || isEnd ? "9.5" : "9"}
-                  fontWeight="bold"
-                  className="pointer-events-none select-none font-sans"
-                >
-                  {symbol}
-                </text>
-
-                {/* Floating Label Badge */}
-                <g
-                  transform={`translate(${
-                    w.x > 380 ? w.x - 14 - (w.label.length * 6 + 18) : w.x + 14
-                  }, ${w.y - 12})`}
-                  className="pointer-events-none"
-                >
-                  <rect
-                    x="0"
-                    y="0"
-                    width={w.label.length * 6 + 18}
-                    height="22"
-                    rx="11"
-                    className="fill-white/95 dark:fill-slate-900/95 stroke-slate-200 dark:stroke-slate-700 shadow-sm"
-                    strokeWidth="1"
-                  />
-                  <text
-                    x={9}
-                    y="14"
-                    className="fill-slate-800 dark:fill-slate-100 font-bold"
-                    fontSize="9.5"
-                  >
-                    {w.label}
-                  </text>
-                </g>
-              </g>
-            );
-          })}
+          <WaypointCanvasMarkers
+            waypoints={waypoints}
+            draggingId={draggingId}
+            onWaypointMouseDown={handleWaypointMouseDown}
+          />
         </svg>
 
         {/* Live Drag Coordinate HUD */}

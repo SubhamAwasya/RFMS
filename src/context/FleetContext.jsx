@@ -47,12 +47,34 @@ const saveStorage = (key, val) => {
 
 export function FleetProvider({ children }) {
   // Facility Hierarchy (persisted)
-  const [buildings, setBuildings] = useState(() =>
-    loadStorage("rfms_buildings", INITIAL_BUILDINGS)
-  );
-  const [floors, setFloors] = useState(() =>
-    loadStorage("rfms_floors", INITIAL_FLOORS)
-  );
+  const [buildings, setBuildings] = useState(() => {
+    const loaded = loadStorage("rfms_buildings", null);
+    if (Array.isArray(loaded) && loaded.length >= INITIAL_BUILDINGS.length) {
+      return loaded;
+    }
+    return INITIAL_BUILDINGS;
+  });
+  const [floors, setFloors] = useState(() => {
+    const loaded = loadStorage("rfms_floors", null);
+    if (Array.isArray(loaded) && loaded.length >= INITIAL_FLOORS.length) {
+      const fg = loaded.find((f) => f.id === "floor-g");
+      if (fg && (!fg.restrictedZones || fg.restrictedZones.length <= 2)) {
+        return loaded.map((f) => {
+          const initMatch = INITIAL_FLOORS.find((i) => i.id === f.id);
+          if (initMatch && initMatch.restrictedZones?.length > 2) {
+            return {
+              ...f,
+              restrictedZones: initMatch.restrictedZones,
+              stations: initMatch.stations || f.stations,
+            };
+          }
+          return f;
+        });
+      }
+      return loaded;
+    }
+    return INITIAL_FLOORS;
+  });
   const [activeBuildingId, setActiveBuildingId] = useState(() =>
     loadStorage("rfms_active_building_id", "bldg-1")
   );
@@ -61,15 +83,33 @@ export function FleetProvider({ children }) {
   );
 
   // Single Flagship Robot: Forklift AGV (FL-01) (persisted)
-  const [forklift, setForklift] = useState(() =>
-    loadStorage("rfms_forklift", INITIAL_FORKLIFT_AGV)
-  );
+  const [forklift, setForklift] = useState(() => {
+    const loaded = loadStorage("rfms_forklift", INITIAL_FORKLIFT_AGV);
+    if (loaded && (typeof loaded.battery !== "number" || loaded.battery < 0)) {
+      return { ...loaded, battery: 95 };
+    }
+    return loaded;
+  });
 
-  // Fleet array (persisted: defaults to FL-02, FL-03, and FB-01)
+  // Fleet array: 9 remaining AGVs in the 10-robot fleet (persisted)
   const [otherAgvs, setOtherAgvs] = useState(() => {
     const loaded = loadStorage("rfms_other_agvs", null);
-    if (Array.isArray(loaded)) {
-      return loaded;
+    if (Array.isArray(loaded) && loaded.length >= 8) {
+      const valid = loaded.filter(
+        (a) =>
+          a &&
+          a.id !== "FL-01" &&
+          (a.type === "Forklift AGV" || a.type === "Flatbed Payload Carrier AGV")
+      );
+      if (valid.length >= 8) {
+        return valid.map((a) => {
+          if (typeof a.battery !== "number" || a.battery < 0) {
+            const match = DEMO_10_AGVS.find((d) => d.id === a.id);
+            return { ...a, battery: match?.battery || 90 };
+          }
+          return a;
+        });
+      }
     }
     return INITIAL_OTHER_AGVS;
   });
@@ -486,55 +526,184 @@ export function FleetProvider({ children }) {
     });
   }, [addBlackboxLog, activeRoute.length]);
 
-  // Send AGV to Charger Pad
-  const sendToCharger = useCallback(() => {
-    const target = forklift || otherAgvs[0];
-    if (!target) return;
-    const targetPos = target.position || target.coordinates || { x: 300, y: 250 };
-    const charger = activeFloor.stations?.find((s) => s.type === "charger") || {
-      x: 880,
-      y: 140,
-      name: "Charger Pad Alpha",
-    };
+  // Realistic Industrial Robot Fault Presets
+  const FAULT_PRESETS = useMemo(
+    () => [
+      "Drive Actuator Motor Stall",
+      "LiDAR Proximity Safety Field Violation",
+      "Navigation IMU Gyro Drift Anomaly",
+      "Wheel Traction Loss & Slip Error",
+      "Actuator Hydraulic Pressure Drop",
+    ],
+    []
+  );
 
-    const returnRoute = [
-      { id: "wp-ret-cur", label: "Current Point", x: targetPos.x, y: targetPos.y },
-      { id: "wp-ret-mid", label: "Transit Waypoint", x: 600, y: 140 },
-      { id: "wp-ret-chg", label: charger.name, x: charger.x, y: charger.y, action: "DOCK_CHARGER" },
-    ];
+  // Send AGV to Charger Pad (Specific target robot or primary AGV)
+  const sendToCharger = useCallback(
+    (targetId) => {
+      const id = targetId || forklift?.id || otherAgvs[0]?.id;
+      if (!id) return;
 
-    setActiveRoute(returnRoute);
-    setCurrentWaypointIdx(0);
+      const applyReturn = (prev) => {
+        if (!prev) return prev;
+        const robotFloor = floors.find((f) => f.id === (prev.floorId || activeFloorId)) || activeFloor;
+        const charger = robotFloor?.stations?.find((s) => s.type === "charger") || {
+          x: 880,
+          y: 140,
+          name: "Charger Pad Alpha",
+        };
+        return {
+          ...prev,
+          status: "Returning to Charger",
+          speed: prev.cruiseSpeed || 1.1,
+          currentMission: `Commanded Return to ${charger.name}`,
+        };
+      };
 
-    if (forklift) {
-      setForklift((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: "In Mission",
-              speed: 1.2,
-              currentMission: `Return to ${charger.name}`,
-              targetWaypointIndex: 0,
-            }
-          : null
+      if (forklift && forklift.id === id) {
+        setForklift(applyReturn);
+      }
+      setOtherAgvs((prev) => prev.map((a) => (a.id === id ? applyReturn(a) : a)));
+
+      addBlackboxLog("ACTION", `Auto-Return to charging pad commanded for ${id}`);
+    },
+    [forklift, otherAgvs, floors, activeFloorId, activeFloor, addBlackboxLog]
+  );
+
+  // Simulate Low Battery (< 10%) Condition
+  // Robot immediately diverts from looping, alerts operators, navigates to charger, stops, charges, and resumes at 100%
+  const simulateLowBattery = useCallback(
+    (targetId) => {
+      const id = targetId || forklift?.id || otherAgvs[0]?.id;
+      if (!id) return;
+
+      const applyLowBattery = (prev) => {
+        if (!prev) return prev;
+        const robotFloor = floors.find((f) => f.id === (prev.floorId || activeFloorId)) || activeFloor;
+        const charger = robotFloor?.stations?.find((s) => s.type === "charger") || {
+          x: 880,
+          y: 140,
+          name: "Charger Pad Alpha",
+        };
+        return {
+          ...prev,
+          battery: 8, // Set below 10% threshold
+          status: "Returning to Charger",
+          speed: prev.cruiseSpeed || 1.1,
+          currentMission: `Low Battery (8%) — Returning to ${charger.name}`,
+        };
+      };
+
+      if (forklift && forklift.id === id) {
+        setForklift(applyLowBattery);
+      }
+      setOtherAgvs((prev) => prev.map((a) => (a.id === id ? applyLowBattery(a) : a)));
+
+      const alertId = `ALT-LOWBAT-${id}-${Date.now()}`;
+      setAlerts((prev) => [
+        {
+          id: alertId,
+          agv: id,
+          message: `Low Battery Warning: ${id} dropped to 8% (<10%). Autonomous reroute to charging station engaged.`,
+          time: "Just now",
+          level: "warning",
+        },
+        ...prev.filter((a) => !a.id.startsWith(`ALT-LOWBAT-${id}`)),
+      ]);
+
+      addBlackboxLog(
+        "WARN",
+        `Simulated low battery (8%) triggered for ${id}`,
+        "Autonomous state machine activated: routing directly to floor charging station."
       );
-    } else if (otherAgvs.length > 0) {
-      setOtherAgvs((prev) =>
-        prev.map((a, idx) =>
-          idx === 0
-            ? {
-                ...a,
-                status: "In Mission",
-                speed: 1.2,
-                currentMission: `Return to ${charger.name}`,
-              }
-            : a
-        )
-      );
-    }
+    },
+    [forklift, otherAgvs, floors, activeFloorId, activeFloor, addBlackboxLog]
+  );
 
-    addBlackboxLog("ACTION", `Auto-Return commanded to ${charger.name}`);
-  }, [activeFloor, forklift, otherAgvs, addBlackboxLog]);
+  // Simulate Hardware/Sensor Fault with Automated 8-Second Self-Healing Watchdog
+  const simulateRobotFault = useCallback(
+    (targetId, customReason) => {
+      const id = targetId || forklift?.id || otherAgvs[0]?.id;
+      if (!id) return;
+      const reason = customReason || FAULT_PRESETS[Math.floor(Math.random() * FAULT_PRESETS.length)];
+      const alertId = `ALT-FAULT-${id}-${Date.now()}`;
+      const autoFixDuration = 8000; // 8-second auto-repair cooldown
+
+      const applyFault = (prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          status: "Fault",
+          speed: 0.0,
+          currentMission: `Hardware Fault: ${reason} — Watchdog Active`,
+          faultInfo: {
+            reason,
+            triggeredAt: Date.now(),
+            autoFixAt: Date.now() + autoFixDuration,
+            alertId,
+          },
+        };
+      };
+
+      if (forklift && forklift.id === id) {
+        setForklift(applyFault);
+      }
+      setOtherAgvs((prev) => prev.map((a) => (a.id === id ? applyFault(a) : a)));
+
+      setAlerts((prev) => [
+        {
+          id: alertId,
+          agv: id,
+          message: `CRITICAL FAULT [${id}]: ${reason}. Actuator brakes locked. Automated watchdog scheduled for self-repair (8s).`,
+          time: "Just now",
+          level: "danger",
+        },
+        ...prev,
+      ]);
+
+      addBlackboxLog(
+        "CRITICAL",
+        `Hardware fault simulated on ${id}: ${reason}`,
+        "Safety brakes hardware-locked (0.0 m/s). Automated diagnostic watchdog scheduled for recovery in 8s."
+      );
+    },
+    [forklift, otherAgvs, FAULT_PRESETS, addBlackboxLog]
+  );
+
+  // Immediate Manual Resolution for Robot Fault (Operator Override)
+  const fixRobotFault = useCallback(
+    (targetId) => {
+      const id = targetId || forklift?.id || otherAgvs[0]?.id;
+      if (!id) return;
+
+      const applyFix = (prev) => {
+        if (!prev || prev.status !== "Fault") return prev;
+        const alertId = prev.faultInfo?.alertId;
+        if (alertId) {
+          setAlerts((aPrev) => aPrev.filter((a) => a.id !== alertId));
+        }
+        return {
+          ...prev,
+          status: AGV_STATUS.AUTO_LOOP,
+          speed: prev.cruiseSpeed || 1.2,
+          faultInfo: null,
+          currentMission: "Continuous Looping Path",
+        };
+      };
+
+      if (forklift && forklift.id === id) {
+        setForklift(applyFix);
+      }
+      setOtherAgvs((prev) => prev.map((a) => (a.id === id ? applyFix(a) : a)));
+
+      addBlackboxLog(
+        "INFO",
+        `Manual operator fix applied for ${id}`,
+        "Diagnostics cleared. Safety brakes released and autonomous looping restored."
+      );
+    },
+    [forklift, otherAgvs, addBlackboxLog]
+  );
 
   // Teleoperation & Autonomous Looping Controls
   const takeManualControl = useCallback(
@@ -934,6 +1103,21 @@ export function FleetProvider({ children }) {
     if (!targetId) return;
     const applyResume = (prev) => {
       if (!prev) return prev;
+      if (prev.battery <= 0) {
+        const robotFloor = floors.find((f) => f.id === (prev.floorId || activeFloorId)) || activeFloor;
+        const charger = robotFloor?.stations?.find((s) => s.type === "charger") || {
+          x: 880,
+          y: 140,
+          name: "Charger Pad Alpha",
+        };
+        return {
+          ...prev,
+          battery: 6,
+          status: "Returning to Charger",
+          speed: 0.9,
+          currentMission: `Emergency Jump-start — Returning to ${charger.name}`,
+        };
+      }
       const resumeSpeed = prev.cruiseSpeed || 1.2;
       return {
         ...prev,
@@ -955,7 +1139,7 @@ export function FleetProvider({ children }) {
       `Emergency Stop released for ${targetId}`,
       "Vehicle returned to autonomous looping path."
     );
-  }, [forklift, addBlackboxLog]);
+  }, [forklift, floors, activeFloorId, activeFloor, addBlackboxLog]);
 
   // Alert Helpers
   const acknowledgeAlert = useCallback((id) => {
@@ -965,6 +1149,183 @@ export function FleetProvider({ children }) {
   const clearAllAlerts = useCallback(() => {
     setAlerts([]);
   }, []);
+
+  // Authentic Industrial AGV / AMR Telemetry Alert Presets
+  const RANDOM_ROBOT_ALERT_PRESETS = useMemo(
+    () => [
+      // Category: LiDAR, Vision & Safety
+      {
+        level: "warning",
+        category: "Sensors",
+        message: "LiDAR optical lens transmission at 84% — cleaning scheduled for next dock",
+      },
+      {
+        level: "warning",
+        category: "Proximity",
+        message: "Narrow passage clearance: side radar distance envelope < 0.42m",
+      },
+      {
+        level: "info",
+        category: "Navigation",
+        message: "Dynamic aisle detour calculated: bypassed corridor pallet staging (+0.6s)",
+      },
+      {
+        level: "danger",
+        category: "Safety",
+        message: "LiDAR Safety Envelope breach: transient obstacle detected within 0.5m envelope",
+      },
+      {
+        level: "info",
+        category: "Sensors",
+        message: "3D Depth Camera spatial pointcloud recalibrated: zero blindspots reported",
+      },
+
+      // Category: Battery, Thermal & Energy
+      {
+        level: "warning",
+        category: "Thermal",
+        message: "Battery core temp elevated to 38.6°C — auxiliary cooling fan activated",
+      },
+      {
+        level: "info",
+        category: "Power",
+        message: "Wireless inductive charging handshake confirmed at 120 kW rating",
+      },
+      {
+        level: "info",
+        category: "Power",
+        message: "Regenerative braking energy recovered: +0.12 kWh returned to cells",
+      },
+      {
+        level: "warning",
+        category: "Battery",
+        message: "Cell voltage balance variance: bank #3 variance ±0.03V within operating margins",
+      },
+
+      // Category: Traction, Localization & Drivetrain
+      {
+        level: "warning",
+        category: "Traction",
+        message: "Minor wheel slip detected on Sector B epoxy floor transition marker",
+      },
+      {
+        level: "info",
+        category: "Localization",
+        message: "SLAM floor anchor relocalization confirmed against QR fiducial #24 (99.8% precision)",
+      },
+      {
+        level: "warning",
+        category: "Network",
+        message: "Industrial WiFi 6 AP roaming handover latency spike (42ms) near Zone C",
+      },
+      {
+        level: "info",
+        category: "Drivetrain",
+        message: "Drive motor torque nominal: 98.6% grip efficiency verified across corridor",
+      },
+      {
+        level: "danger",
+        category: "Drivetrain",
+        message: "Steering servo angle tracking error > 3.6° — automated realignment sequence started",
+      },
+
+      // Category: Payload, Mast & Lifting Mechanics
+      {
+        level: "info",
+        category: "Payload",
+        message: "Pallet tare weight auto-calibrated: load verified at 450 kg nominal",
+      },
+      {
+        level: "warning",
+        category: "Payload",
+        message: "Payload weight nearing upper envelope threshold (1,150 kg / 1,200 kg)",
+      },
+      {
+        level: "info",
+        category: "Hydraulics",
+        message: "Hydraulic mast pressure verified: primary lift cylinders at 145 bar nominal",
+      },
+      {
+        level: "danger",
+        category: "Forks",
+        message: "Pallet clamp pressure sensor variance: load re-alignment check advised",
+      },
+      {
+        level: "info",
+        category: "Inventory",
+        message: "Integrated 2D barcode scanner successfully decoded pallet tag #PLT-904",
+      },
+    ],
+    []
+  );
+
+  // Generate a realistic randomized telemetry alert for a specific robot or random fleet AGV
+  const generateRandomAlert = useCallback(
+    (targetId) => {
+      const allRobots = agvs && agvs.length > 0 ? agvs : (forklift ? [forklift] : []);
+      if (allRobots.length === 0) return null;
+
+      const robot = targetId
+        ? allRobots.find((a) => a.id === targetId) || allRobots[0]
+        : allRobots[Math.floor(Math.random() * allRobots.length)];
+
+      const robotId = robot?.id || "FL-01";
+      const preset = RANDOM_ROBOT_ALERT_PRESETS[
+        Math.floor(Math.random() * RANDOM_ROBOT_ALERT_PRESETS.length)
+      ];
+
+      const alertId = `ALT-RND-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const newAlert = {
+        id: alertId,
+        agv: robotId,
+        message: `[${robotId}] ${preset.message}`,
+        category: preset.category,
+        time: "Just now",
+        level: preset.level,
+        timestamp: Date.now(),
+      };
+
+      setAlerts((prev) => [newAlert, ...prev.slice(0, 49)]); // keep last 50 alerts
+
+      // Write corresponding audit trail entry in Blackbox Logs
+      const bbType =
+        preset.level === "danger"
+          ? "CRITICAL"
+          : preset.level === "warning"
+          ? "WARN"
+          : "INFO";
+
+      addBlackboxLog(
+        bbType,
+        `Telemetry Alert: ${newAlert.message}`,
+        `Subsystem: ${preset.category} | AGV: ${robotId} | Floor: ${robot?.floorId || activeFloorId}`
+      );
+
+      return newAlert;
+    },
+    [agvs, forklift, RANDOM_ROBOT_ALERT_PRESETS, activeFloorId, addBlackboxLog]
+  );
+
+  // Background Automatic Random Alert Generator (fires every 18-35 seconds)
+  const [autoAlertsEnabled, setAutoAlertsEnabled] = useState(true);
+
+  useEffect(() => {
+    if (!autoAlertsEnabled) return;
+
+    let timeoutId;
+    const scheduleNext = () => {
+      // Randomized delay: between 18,000ms and 36,000ms
+      const delay = Math.floor(18000 + Math.random() * 18000);
+      timeoutId = setTimeout(() => {
+        generateRandomAlert();
+        scheduleNext();
+      }, delay);
+    };
+
+    scheduleNext();
+
+    return () => clearTimeout(timeoutId);
+  }, [autoAlertsEnabled, generateRandomAlert]);
 
   // Factory Reset All Data to Single-Entity Baseline
   const resetAllData = useCallback(() => {
@@ -1079,6 +1440,40 @@ export function FleetProvider({ children }) {
   }, []);
 
   // --------------------------------------------------------------------------
+  // DYNAMIC PER-ROBOT AUTOMATIC BATTERY DRAIN CALCULATOR
+  // Computes realistic, individualized discharge curves with speed & cargo factors
+  // --------------------------------------------------------------------------
+  const computeBatteryDrain = (robot, isMoving = true) => {
+    let baseRate = robot?.batteryDrainRate;
+    if (typeof baseRate !== "number" || baseRate < 0.005 || baseRate > 0.05) {
+      // Individual random base discharge rate: between 0.009% and 0.026% per 50ms tick
+      // (~0.18% to 0.52% per second, so 1% drops every 2 to 5.5 seconds)
+      baseRate = Number((0.009 + Math.random() * 0.017).toFixed(4));
+    }
+
+    // Micro-jitter simulating instantaneous motor torque, friction, and grade variation
+    const jitter = (Math.random() - 0.48) * 0.003;
+
+    if (!isMoving) {
+      // Quiescent standby drain (sensors, onboard computer, cooling fan, comms radio)
+      const idleDrain = Math.max(0.0006, Number((0.0012 + Math.random() * 0.0008).toFixed(4)));
+      return { drain: idleDrain, drainRate: baseRate };
+    }
+
+    const currentSpeed = typeof robot.speed === "number" && robot.speed > 0 ? robot.speed : (robot.cruiseSpeed || 1.2);
+    const speedMultiplier = Math.max(0.6, Math.min(2.0, currentSpeed / 1.2));
+    const hasPayload = Boolean(robot.cargo || (robot.payload && robot.payload !== "0 kg"));
+    const payloadMultiplier = hasPayload ? 1.45 : 1.0;
+
+    const instantaneousDrain = Math.max(
+      0.004,
+      Number(((baseRate * speedMultiplier * payloadMultiplier) + jitter).toFixed(4))
+    );
+
+    return { drain: instantaneousDrain, drainRate: baseRate };
+  };
+
+  // --------------------------------------------------------------------------
   // CONTINUOUS REAL-TIME CLIENT SIMULATION LOOP
   // Runs at 50ms (20 FPS) with smooth angular interpolation and fine stepping
   // --------------------------------------------------------------------------
@@ -1091,10 +1486,19 @@ export function FleetProvider({ children }) {
       setForklift((prev) => {
         if (!prev) return null;
 
-        // Battery Charging Simulation
-        let nextBattery = prev.battery;
-        if (prev.status === "Charging" && prev.battery < 100) {
-          nextBattery = Math.min(100, Number((prev.battery + 0.1).toFixed(2)));
+        let curBat = typeof prev.battery === "number" ? prev.battery : 95;
+
+        // If battery is fully depleted (0%) and vehicle is not currently charging, stay halted at 0%
+        if (curBat <= 0 && prev.status !== "Charging") {
+          return {
+            ...prev,
+            battery: 0,
+            batteryDrainRate: 0,
+            speed: 0.0,
+            status: prev.status === "Stopped" ? "Stopped" : "Low Battery",
+            currentMission: "Battery Depleted (0%) — Station Charging Required",
+            fork: nextFork,
+          };
         }
 
         // Fork Mechanism Height Animation
@@ -1105,20 +1509,216 @@ export function FleetProvider({ children }) {
           nextFork = { ...prev.fork, heightMeters: nextH };
         }
 
-        // If manual teleop, stopped, charging, or obstacle blocked, keep position unchanged
+        // Helper to get floor's designated charging pad
+        const robotFloor = floors.find((f) => f.id === (prev.floorId || activeFloorId)) || activeFloor;
+        const charger = robotFloor?.stations?.find((s) => s.type === "charger") || {
+          x: 880,
+          y: 140,
+          name: "Charger Pad Alpha",
+        };
+
+        // --- STATE 1: HARDWARE/SENSOR FAULT & AUTO-FIX WATCHDOG ---
+        if (prev.status === "Fault") {
+          if (prev.faultInfo && Date.now() >= prev.faultInfo.autoFixAt) {
+            const faultAlertId = prev.faultInfo.alertId;
+            if (faultAlertId) {
+              setAlerts((aPrev) => aPrev.filter((a) => a.id !== faultAlertId));
+            }
+            addBlackboxLog(
+              "INFO",
+              `Watchdog auto-resolved fault on ${prev.id || "FL-01"}: ${prev.faultInfo.reason}`,
+              "Automated diagnostic routine PASSED. Brakes released and autonomous looping restored."
+            );
+            return {
+              ...prev,
+              status: AGV_STATUS.AUTO_LOOP,
+              speed: prev.cruiseSpeed || 1.2,
+              faultInfo: null,
+              fork: nextFork,
+              currentMission: "Continuous Looping Path",
+            };
+          }
+          // Idle standby drain while halted in Fault
+          const { drain: fDrain, drainRate: fRate } = computeBatteryDrain(prev, false);
+          const nextBat = Math.max(0, Number((curBat - fDrain).toFixed(2)));
+          return {
+            ...prev,
+            speed: 0.0,
+            battery: nextBat,
+            batteryDrainRate: fRate,
+            fork: nextFork,
+          };
+        }
+
+        // --- STATE 2: DOCKED AT CHARGING POINT (FAST CHARGING) ---
+        if (prev.status === "Charging") {
+          if (curBat < 100) {
+            const chargeSpeed = 0.45 + Math.random() * 0.25;
+            const nextBat = Math.min(100, Number((curBat + chargeSpeed).toFixed(2)));
+            return {
+              ...prev,
+              battery: nextBat,
+              speed: 0.0,
+              fork: nextFork,
+            };
+          } else {
+            // 100% full charge reached! Undock and resume following route!
+            addBlackboxLog(
+              "INFO",
+              `${prev.id || "FL-01"} reached 100% full charge`,
+              "Undocked from charging station and resumed continuous autonomous looping path."
+            );
+            setAlerts((aPrev) =>
+              aPrev.filter((a) => !a.id.includes(`LOWBAT-${prev.id || "FL-01"}`))
+            );
+            // Re-roll fresh random discharge rate for the new cycle
+            const newDrainRate = Number((0.009 + Math.random() * 0.017).toFixed(4));
+            return {
+              ...prev,
+              battery: 100,
+              batteryDrainRate: newDrainRate,
+              status: AGV_STATUS.AUTO_LOOP,
+              speed: prev.cruiseSpeed || 1.2,
+              currentMission: "Continuous Looping Path",
+              fork: nextFork,
+            };
+          }
+        }
+
+        // --- STATE 3: LOW BATTERY (<10%) AUTONOMOUS REROUTE ---
+        if (
+          curBat < 10 &&
+          curBat > 0 &&
+          prev.status !== "Returning to Charger" &&
+          prev.status !== "Stopped" &&
+          prev.status !== AGV_STATUS.MANUAL_TELEOP
+        ) {
+          addBlackboxLog(
+            "WARN",
+            `Low battery warning for ${prev.id || "FL-01"} (${Math.round(curBat)}%)`,
+            `Autonomous diversion to ${charger.name} engaged.`
+          );
+          setAlerts((aPrev) => [
+            {
+              id: `ALT-LOWBAT-${prev.id || "FL-01"}-${Date.now()}`,
+              agv: prev.id || "FL-01",
+              message: `Low Battery (<10%): ${prev.id || "FL-01"} at ${Math.round(curBat)}%. Rerouting to ${charger.name}.`,
+              time: "Just now",
+              level: "warning",
+            },
+            ...aPrev.filter((a) => !a.id.startsWith(`ALT-LOWBAT-${prev.id || "FL-01"}`)),
+          ]);
+          return {
+            ...prev,
+            status: "Returning to Charger",
+            speed: prev.cruiseSpeed || 1.1,
+            currentMission: `Low Battery (${Math.round(curBat)}%) — Returning to ${charger.name}`,
+            fork: nextFork,
+          };
+        }
+
+        // --- STATE 4: RETURNING TO CHARGER NAVIGATION ---
+        if (prev.status === "Returning to Charger") {
+          const cx = prev.position?.x ?? 300;
+          const cy = prev.position?.y ?? 250;
+          const tx = charger.x;
+          const ty = charger.y;
+          const distToCharger = Math.hypot(tx - cx, ty - cy);
+
+          // Arrived at charging pad (< 12px)? STOP AND DOCK!
+          if (distToCharger <= 12) {
+            addBlackboxLog(
+              "ACTION",
+              `${prev.id || "FL-01"} arrived and docked at ${charger.name}`,
+              "Vehicle halted (0.0 m/s). Fast charging cycle initiated."
+            );
+            setAlerts((aPrev) =>
+              aPrev.filter((a) => !a.id.includes(`LOWBAT-${prev.id || "FL-01"}`))
+            );
+            return {
+              ...prev,
+              position: { x: tx, y: ty, headingDeg: prev.position?.headingDeg ?? 0 },
+              coordinates: { x: tx, y: ty },
+              status: "Charging",
+              speed: 0.0,
+              currentMission: `Docked at ${charger.name} (Charging)`,
+              fork: nextFork,
+            };
+          }
+
+          // Steer smoothly towards charging pad
+          let targetHeading = (Math.atan2(ty - cy, tx - cx) * 180) / Math.PI;
+          if (targetHeading < 0) targetHeading += 360;
+
+          const currentHeading = prev.position?.headingDeg ?? prev.heading ?? targetHeading;
+          let angleDiff = ((targetHeading - currentHeading + 540) % 360) - 180;
+          const maxTurnPerTick = 6;
+          let smoothHeading = currentHeading;
+          if (Math.abs(angleDiff) <= maxTurnPerTick) {
+            smoothHeading = targetHeading;
+          } else {
+            smoothHeading = (currentHeading + Math.sign(angleDiff) * maxTurnPerTick + 360) % 360;
+          }
+          smoothHeading = Number((((smoothHeading % 360) + 360) % 360).toFixed(1));
+
+          const retSpeed = prev.cruiseSpeed || 1.1;
+          const stepDist = retSpeed * 1.3;
+          const angleRad = (targetHeading * Math.PI) / 180;
+          const nextX = Number((cx + Math.cos(angleRad) * stepDist).toFixed(2));
+          const nextY = Number((cy + Math.sin(angleRad) * stepDist).toFixed(2));
+
+          // Drains naturally down to 0% while in transit
+          const { drain: rDrain, drainRate: rRate } = computeBatteryDrain(prev, true);
+          const nextBat = Math.max(0, Number((curBat - rDrain).toFixed(2)));
+
+          if (nextBat <= 0) {
+            return {
+              ...prev,
+              battery: 0,
+              batteryDrainRate: 0,
+              speed: 0.0,
+              status: "Low Battery",
+              currentMission: "Battery Depleted (0%) — Station Charging Required",
+              fork: nextFork,
+            };
+          }
+
+          return {
+            ...prev,
+            position: { x: nextX, y: nextY, headingDeg: smoothHeading },
+            coordinates: { x: nextX, y: nextY },
+            heading: smoothHeading,
+            speed: retSpeed,
+            status: "Returning to Charger",
+            currentMission: `Low Battery (${Math.round(nextBat)}%) — Returning to ${charger.name}`,
+            battery: nextBat,
+            batteryDrainRate: rRate,
+            fork: nextFork,
+          };
+        }
+
+        // If manual teleop, stopped, or obstacle blocked, position remains frozen but standby drain ticks
         if (
           !prev.position ||
           prev.status === AGV_STATUS.MANUAL_TELEOP ||
           prev.status === "Stopped" ||
-          prev.status === "Charging" ||
-          prev.status === AGV_STATUS.BLOCKED
+          prev.status === AGV_STATUS.BLOCKED ||
+          prev.status === "Low Battery"
         ) {
-          if (nextBattery !== prev.battery || nextFork !== prev.fork) {
-            return { ...prev, battery: nextBattery, fork: nextFork };
-          }
-          return prev;
+          const { drain: sDrain, drainRate: sRate } = computeBatteryDrain(prev, false);
+          const nextBat = Math.max(0, Number((curBat - sDrain).toFixed(2)));
+          return {
+            ...prev,
+            battery: nextBat,
+            batteryDrainRate: nextBat <= 0 ? 0 : sRate,
+            speed: 0.0,
+            status: prev.status === "Stopped" ? "Stopped" : (nextBat <= 0 ? "Low Battery" : prev.status),
+            currentMission: nextBat <= 0 ? "Battery Depleted (0%) — Station Charging Required" : prev.currentMission,
+            fork: nextFork,
+          };
         }
 
+        // --- NORMAL AUTO-PILOT WAYPOINT NAVIGATION ---
         const route = getRobotPath(prev.id || "FL-01", prev.floorId || activeFloorId);
         if (!route || route.length === 0) return prev;
 
@@ -1152,7 +1752,7 @@ export function FleetProvider({ children }) {
             ]);
             return {
               ...prev,
-              battery: nextBattery,
+              battery: curBat,
               fork: nextFork,
               status: AGV_STATUS.BLOCKED,
               speed: 0.0,
@@ -1185,10 +1785,10 @@ export function FleetProvider({ children }) {
         let targetHeading = (Math.atan2(dy, dx) * 180) / Math.PI;
         if (targetHeading < 0) targetHeading += 360;
 
-        // Smooth heading angular interpolation (steers smoothly without snapping)
+        // Smooth heading angular interpolation
         const currentHeading = prev.position?.headingDeg ?? prev.heading ?? targetHeading;
         let angleDiff = ((targetHeading - currentHeading + 540) % 360) - 180;
-        const maxTurnPerTick = 6; // 6 deg / 50ms = 120 deg/sec smooth steering
+        const maxTurnPerTick = 6;
         let smoothHeading = currentHeading;
         if (Math.abs(angleDiff) <= maxTurnPerTick) {
           smoothHeading = targetHeading;
@@ -1196,6 +1796,10 @@ export function FleetProvider({ children }) {
           smoothHeading = (currentHeading + Math.sign(angleDiff) * maxTurnPerTick + 360) % 360;
         }
         smoothHeading = Number(smoothHeading.toFixed(1));
+
+        // Compute dynamic per-robot random battery drain
+        const { drain: mDrain, drainRate: mRate } = computeBatteryDrain(prev, true);
+        const nextBat = Math.max(0, Number((curBat - mDrain).toFixed(2)));
 
         // Check if arrived at this waypoint
         if (distToTarget <= stepDist + 2) {
@@ -1242,7 +1846,8 @@ export function FleetProvider({ children }) {
             payload: nextPayload,
             targetWaypointIndex: nextIdx,
             fork: nextFork,
-            battery: nextBattery,
+            battery: nextBat,
+            batteryDrainRate: mRate,
           };
         }
 
@@ -1250,10 +1855,6 @@ export function FleetProvider({ children }) {
         const angleRad = (targetHeading * Math.PI) / 180;
         const nextX = Number((cx + Math.cos(angleRad) * stepDist).toFixed(2));
         const nextY = Number((cy + Math.sin(angleRad) * stepDist).toFixed(2));
-
-        // Battery drain proportional to speed and cargo
-        const drain = prev.cargo ? 0.008 : 0.004;
-        const nextBat = Math.max(0, Number((nextBattery - drain).toFixed(2)));
 
         return {
           ...prev,
@@ -1263,22 +1864,220 @@ export function FleetProvider({ children }) {
           speed: activeSpeed,
           status: AGV_STATUS.AUTO_LOOP,
           battery: nextBat,
+          batteryDrainRate: mRate,
           fork: nextFork,
         };
       });
 
-      // 3. Autonomous Looping Waypoint Navigation for ALL other robots in fleet
+      // 3. Autonomous Looping & State Machine Navigation for ALL other robots in fleet
       setOtherAgvs((prev) => {
         if (!prev || prev.length === 0) return prev;
         return prev.map((agv) => {
+          let curBat = typeof agv.battery === "number" ? agv.battery : 85;
+
+          // If battery is fully depleted (0%) and vehicle is not currently charging, stay halted at 0%
+          if (curBat <= 0 && agv.status !== "Charging") {
+            return {
+              ...agv,
+              battery: 0,
+              batteryDrainRate: 0,
+              speed: 0.0,
+              status: agv.status === "Stopped" ? "Stopped" : "Low Battery",
+              currentMission: "Battery Depleted (0%) — Station Charging Required",
+            };
+          }
+
+          const robotFloor = floors.find((f) => f.id === (agv.floorId || activeFloorId)) || activeFloor;
+          const charger = robotFloor?.stations?.find((s) => s.type === "charger") || {
+            x: 880,
+            y: 140,
+            name: "Charger Pad Alpha",
+          };
+
+          // --- STATE 1: HARDWARE/SENSOR FAULT & AUTO-FIX WATCHDOG ---
+          if (agv.status === "Fault") {
+            if (agv.faultInfo && Date.now() >= agv.faultInfo.autoFixAt) {
+              const faultAlertId = agv.faultInfo.alertId;
+              if (faultAlertId) {
+                setAlerts((aPrev) => aPrev.filter((a) => a.id !== faultAlertId));
+              }
+              addBlackboxLog(
+                "INFO",
+                `Watchdog auto-resolved fault on ${agv.id}: ${agv.faultInfo.reason}`,
+                "Automated diagnostic routine PASSED. Brakes released and autonomous looping restored."
+              );
+              return {
+                ...agv,
+                status: AGV_STATUS.AUTO_LOOP,
+                speed: agv.cruiseSpeed || 1.2,
+                faultInfo: null,
+                currentMission: "Continuous Looping Path",
+              };
+            }
+            const { drain: fDrain, drainRate: fRate } = computeBatteryDrain(agv, false);
+            const nextBat = Math.max(0, Number((curBat - fDrain).toFixed(2)));
+            return { ...agv, speed: 0.0, battery: nextBat, batteryDrainRate: fRate };
+          }
+
+          // --- STATE 2: CHARGING AT CHARGER POINT ---
+          if (agv.status === "Charging") {
+            if (curBat < 100) {
+              const chargeSpeed = 0.45 + Math.random() * 0.25;
+              const nextBat = Math.min(100, Number((curBat + chargeSpeed).toFixed(2)));
+              return {
+                ...agv,
+                battery: nextBat,
+                speed: 0.0,
+              };
+            } else {
+              addBlackboxLog(
+                "INFO",
+                `${agv.id} reached 100% full charge`,
+                "Undocked from charging station and resumed continuous autonomous looping path."
+              );
+              setAlerts((aPrev) =>
+                aPrev.filter((a) => !a.id.includes(`LOWBAT-${agv.id}`))
+              );
+              // Fresh randomized discharge rate for the new operational cycle
+              const newDrainRate = Number((0.009 + Math.random() * 0.017).toFixed(4));
+              return {
+                ...agv,
+                battery: 100,
+                batteryDrainRate: newDrainRate,
+                status: AGV_STATUS.AUTO_LOOP,
+                speed: agv.cruiseSpeed || 1.2,
+                currentMission: "Continuous Looping Path",
+              };
+            }
+          }
+
+          // --- STATE 3: LOW BATTERY (<10%) AUTONOMOUS REROUTE ---
+          if (
+            curBat < 10 &&
+            curBat > 0 &&
+            agv.status !== "Returning to Charger" &&
+            agv.status !== "Stopped" &&
+            agv.status !== AGV_STATUS.MANUAL_TELEOP
+          ) {
+            addBlackboxLog(
+              "WARN",
+              `Low battery warning for ${agv.id} (${Math.round(curBat)}%)`,
+              `Autonomous diversion to ${charger.name} engaged.`
+            );
+            setAlerts((aPrev) => [
+              {
+                id: `ALT-LOWBAT-${agv.id}-${Date.now()}`,
+                agv: agv.id,
+                message: `Low Battery (<10%): ${agv.id} at ${Math.round(curBat)}%. Rerouting to ${charger.name}.`,
+                time: "Just now",
+                level: "warning",
+              },
+              ...aPrev.filter((a) => !a.id.startsWith(`ALT-LOWBAT-${agv.id}`)),
+            ]);
+            return {
+              ...agv,
+              status: "Returning to Charger",
+              speed: agv.cruiseSpeed || 1.1,
+              currentMission: `Low Battery (${Math.round(curBat)}%) — Returning to ${charger.name}`,
+            };
+          }
+
+          // --- STATE 4: RETURNING TO CHARGER NAVIGATION ---
+          if (agv.status === "Returning to Charger") {
+            const acx = agv.position?.x ?? agv.coordinates?.x ?? 200;
+            const acy = agv.position?.y ?? agv.coordinates?.y ?? 300;
+            const atx = charger.x;
+            const aty = charger.y;
+            const adist = Math.hypot(atx - acx, aty - acy);
+
+            // Arrived at charging pad (< 12px)? STOP AND DOCK!
+            if (adist <= 12) {
+              addBlackboxLog(
+                "ACTION",
+                `${agv.id} arrived and docked at ${charger.name}`,
+                "Vehicle halted (0.0 m/s). Fast charging cycle initiated."
+              );
+              setAlerts((aPrev) =>
+                aPrev.filter((a) => !a.id.includes(`LOWBAT-${agv.id}`))
+              );
+              return {
+                ...agv,
+                position: { x: atx, y: aty, headingDeg: agv.position?.headingDeg ?? 0 },
+                coordinates: { x: atx, y: aty },
+                status: "Charging",
+                speed: 0.0,
+                currentMission: `Docked at ${charger.name} (Charging)`,
+              };
+            }
+
+            let aTargetHeading = (Math.atan2(aty - acy, atx - acx) * 180) / Math.PI;
+            if (aTargetHeading < 0) aTargetHeading += 360;
+
+            const currentAHeading = agv.position?.headingDeg ?? agv.heading ?? aTargetHeading;
+            let aDiff = ((aTargetHeading - currentAHeading + 540) % 360) - 180;
+            const aMaxTurn = 6;
+            let smoothAHeading = currentAHeading;
+            if (Math.abs(aDiff) <= aMaxTurn) {
+              smoothAHeading = aTargetHeading;
+            } else {
+              smoothAHeading = (currentAHeading + Math.sign(aDiff) * aMaxTurn + 360) % 360;
+            }
+            smoothAHeading = Number((((smoothAHeading % 360) + 360) % 360).toFixed(1));
+
+            const aRetSpeed = agv.cruiseSpeed || 1.1;
+            const aStep = aRetSpeed * 1.3;
+            const aAngleRad = (aTargetHeading * Math.PI) / 180;
+            const anx = Number((acx + Math.cos(aAngleRad) * aStep).toFixed(2));
+            const any = Number((acy + Math.sin(aAngleRad) * aStep).toFixed(2));
+
+            // Drains naturally down to 0% while in transit
+            const { drain: rDrain, drainRate: rRate } = computeBatteryDrain(agv, true);
+            const nextBat = Math.max(0, Number((curBat - rDrain).toFixed(2)));
+
+            if (nextBat <= 0) {
+              return {
+                ...agv,
+                battery: 0,
+                batteryDrainRate: 0,
+                speed: 0.0,
+                status: "Low Battery",
+                currentMission: "Battery Depleted (0%) — Station Charging Required",
+              };
+            }
+
+            return {
+              ...agv,
+              position: { x: anx, y: any, headingDeg: smoothAHeading },
+              coordinates: { x: anx, y: any },
+              heading: smoothAHeading,
+              speed: aRetSpeed,
+              status: "Returning to Charger",
+              currentMission: `Low Battery (${Math.round(nextBat)}%) — Returning to ${charger.name}`,
+              battery: nextBat,
+              batteryDrainRate: rRate,
+            };
+          }
+
+          // If manual teleop, stopped, or obstacle blocked, position remains frozen but standby drain ticks
           if (
             agv.status === AGV_STATUS.MANUAL_TELEOP ||
             agv.status === "Stopped" ||
-            agv.status === "Charging" ||
-            agv.status === AGV_STATUS.BLOCKED
+            agv.status === AGV_STATUS.BLOCKED ||
+            agv.status === "Low Battery"
           ) {
-            return agv;
+            const { drain: sDrain, drainRate: sRate } = computeBatteryDrain(agv, false);
+            const nextBat = Math.max(0, Number((curBat - sDrain).toFixed(2)));
+            return {
+              ...agv,
+              battery: nextBat,
+              batteryDrainRate: nextBat <= 0 ? 0 : sRate,
+              speed: 0.0,
+              status: agv.status === "Stopped" ? "Stopped" : (nextBat <= 0 ? "Low Battery" : agv.status),
+              currentMission: nextBat <= 0 ? "Battery Depleted (0%) — Station Charging Required" : agv.currentMission,
+            };
           }
+
+          // --- NORMAL AUTO-PILOT WAYPOINT NAVIGATION ---
           const route = getRobotPath(agv.id, agv.floorId || activeFloorId);
           if (!route || route.length === 0) return agv;
 
@@ -1310,6 +2109,10 @@ export function FleetProvider({ children }) {
           const aSpeed = agv.speed || 1.2;
           const aStep = aSpeed * 1.3; // 50ms tick step
 
+          // Compute dynamic per-robot random battery drain
+          const { drain: mDrain, drainRate: mRate } = computeBatteryDrain(agv, true);
+          const nextBat = Math.max(0, Number((curBat - mDrain).toFixed(2)));
+
           if (adist <= aStep + 2) {
             const nextIdx = (safeIdx + 1) % route.length;
             return {
@@ -1321,13 +2124,14 @@ export function FleetProvider({ children }) {
               status: AGV_STATUS.AUTO_LOOP,
               currentMission: `Continuous Looping Path: → ${route[nextIdx]?.label || "Next WP"}`,
               targetWaypointIndex: nextIdx,
+              battery: nextBat,
+              batteryDrainRate: mRate,
             };
           }
 
           const aAngleRad = (aTargetHeading * Math.PI) / 180;
           const anx = Number((acx + Math.cos(aAngleRad) * aStep).toFixed(2));
           const any = Number((acy + Math.sin(aAngleRad) * aStep).toFixed(2));
-          const nextBat = Math.max(0, Number(((agv.battery ?? 80) - 0.004).toFixed(2)));
 
           return {
             ...agv,
@@ -1337,6 +2141,7 @@ export function FleetProvider({ children }) {
             speed: aSpeed,
             status: AGV_STATUS.AUTO_LOOP,
             battery: nextBat,
+            batteryDrainRate: mRate,
           };
         });
       });
@@ -1350,6 +2155,7 @@ export function FleetProvider({ children }) {
     currentWaypointIdx,
     simulatedObstacle,
     activeFloor,
+    floors,
     addBlackboxLog,
   ]);
 
@@ -1397,6 +2203,9 @@ export function FleetProvider({ children }) {
     currentWaypointIdx,
     setCurrentWaypointIdx,
     sendToCharger,
+    simulateLowBattery,
+    simulateRobotFault,
+    fixRobotFault,
     useElevatorToFloor,
 
     // Obstacle Simulation
@@ -1441,6 +2250,9 @@ export function FleetProvider({ children }) {
     setAlerts,
     acknowledgeAlert,
     clearAllAlerts,
+    generateRandomAlert,
+    autoAlertsEnabled,
+    setAutoAlertsEnabled,
 
     // Compatibility stubs
     missions: [],

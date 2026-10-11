@@ -3,7 +3,7 @@
 
 Welcome to the **Robotics Fleet Management System (RFMS)**! 
 
-Think of this software as an **Air Traffic Control Tower** for your warehouse or factory floor. Instead of airplanes, you are supervising intelligent self-driving robots (AGVs) that carry pallets, pull carts, inspect machinery, and transport materials between stations.
+Think of this software as an **Air Traffic Control Tower** for your warehouse or factory floor. Instead of airplanes, you are supervising intelligent self-driving robots (**AGVs & AMRs**) that carry pallets, tow carts, transport materials, and dock at automated charging bays.
 
 You **do not need any coding or programming knowledge** to use this software. This guide explains everything in simple, everyday language.
 
@@ -11,214 +11,165 @@ You **do not need any coding or programming knowledge** to use this software. Th
 
 ## 🧭 1. Understanding Your Screen Layout
 
-When you open RFMS, the screen is split into three main areas:
+When you open RFMS, the screen is organized into three clean zones:
 
 ```
-+-----------------------------------------------------------------------------------+
-|  [RFMS Logo]      TOP BAR: Search | Clock | [E-STOP] | Alerts Bell | Theme | Avatar|
-+--------------+--------------------------------------------------------------------+
-|              |                                                                    |
-|  LEFT MENU:  |                      MAIN WORK AREA                                |
-|              |                                                                    |
-|  • Dashboard |   This large central area changes based on what you click          |
-|  • AGVs      |   on the left menu:                                                |
-|  • Missions  |                                                                    |
-|  • Live Map  |   - Interactive Floor Map                                          |
-|  • Schedules |   - Robot Lists & Batteries                                        |
-|  • Alerts    |   - Route Planners                                                 |
-|  • Settings  |                                                                    |
-|              |                                                                    |
-+--------------+--------------------------------------------------------------------+
++-----------------------------------------------------------------------------------------+
+|  [RFMS]      TOP BAR: Search | Building Filter | [E-STOP] | Alerts Bell | Theme | User  |
++--------------+--------------------------------------------------------------------------+
+|              |                                                                          |
+|  LEFT MENU:  |                        MAIN WORK AREA                                    |
+|              |                                                                          |
+|  • Dashboard |   This large central area changes based on what you select:              |
+|  • Live Map  |                                                                          |
+|  • Maps &    |   - Executive Operational Dashboard                                      |
+|    Facilties |   - Digital Twin Floor Map (Zoom, Pan, Real-Time AGV Movement)           |
+|  • AGVs /    |   - Vehicle Cockpit (Live ROS 2 Logs, Mini-Map, WASD Drive)              |
+|    Robots    |   - Interactive Waypoint Route Planner                                   |
+|  • Alerts    |   - Safety Alerts & Preventive Maintenance                               |
+|  • Settings  |                                                                          |
+|              |                                                                          |
++--------------+--------------------------------------------------------------------------+
 ```
 
-1. **Left Sidebar Menu**: Your main remote control. Click any item here to switch screens (Dashboard, Live Map, Robots, Missions, etc.).
+1. **Left Sidebar Menu**: Your primary navigation remote control.
+   - **Collapse Sidebar**: Click the small arrow button at the bottom of the sidebar or press `Ctrl + B` (or `Cmd + B` on Mac) to collapse the sidebar into a slim icon rail, giving you maximum screen space for maps!
 2. **Top Header Bar**: 
-   - **Search Box**: Quickly find any robot by ID (e.g., `AGV-01`) or location (e.g., `Aisle 2`).
-   - **Live Pulse**: Shows the green "Live" badge indicating real-time communication is active.
-   - **Red E-Stop Button**: Emergency safety freeze button.
-   - **Bell Icon**: Shows how many unread safety warnings exist.
-   - **Sun / Moon Icon**: Switches between Dark Mode (modern dark gray) and Light Mode (clean daylight white).
-3. **Main Work Area**: Where you view maps, supervise robots, and dispatch tasks.
+   - **Search Box**: Quickly look up any robot by ID (e.g., `FL-01`, `AMR-01`) or location.
+   - **Live Indicator**: Pulsing green badge confirming real-time telemetry is running.
+   - **Big Red E-Stop Button**: Instant fleet safety stop.
+   - **Alerts Bell**: Shows current unread warnings.
+   - **Theme Switcher**: One-click toggle between Dark Mode and Light Mode.
+3. **Main Work Area**: Where your operational dashboards, maps, and vehicle controls appear.
 
 ---
 
-## 🚦 2. The Big Red Safety Button: Emergency Stop (E-Stop)
+## 🚨 2. Emergency Safety: The Global E-Stop Button
 
-At the top right of your screen is a red button labeled **E-Stop**.
+At the top right of your screen is a prominent red button labeled **E-Stop**.
 
-### What it does:
-* In an emergency (e.g., someone steps into an aisle, an unexpected spill, or a blocked corridor), click **E-Stop**.
-* A confirmation box will pop up: click **Engage Global E-Stop**.
-* **Instantly, all active robots will brake and freeze to a complete stop (0.0 m/s)**. Their missions will be paused.
+### When to use it:
+* If an unexpected obstacle appears (e.g., a person walking into an aisle, a dropped pallet, or an unmapped obstruction), click **E-Stop**.
+* A confirmation dialog will pop up: click **Engage Global E-Stop**.
+* **Instantly, all active robots across the entire facility will apply mechanical brakes and freeze to 0.0 m/s**. All missions and teleoperation loops are immediately locked.
 
-### How to resume normal operations:
-* Once the floor is clear and safe, look at the top right: the button has now turned gold and says **Resume Fleet**.
-* Click **Resume Fleet** to release the brakes and return the robots to their normal schedules.
+### How to resume operations:
+* Once the floor is inspected and clear, look at the top bar: the button will now display in gold as **Resume Fleet**.
+* Click **Resume Fleet** to release the safety interlocks and return vehicles to their scheduled guide routines.
 
 ---
 
-## 📊 3. The Dashboard (Your Morning Overview)
+## 📊 3. The Dashboard (Your Operational Command Center)
 
-Click **Dashboard** in the left menu. This is your command center overview:
+Click **Dashboard** in the left menu. This screen is engineered to give you high-level intelligence and highlight **only what needs your attention**:
 
-* **Top 6 Stat Cards**:
-  * **Total AGVs**: Total number of robots in the building (e.g., 18).
-  * **Active**: How many robots are currently working or moving.
-  * **In Mission**: Robots actively delivering materials right now.
-  * **Charging**: Robots parked at charging docks replenishing battery.
-  * **Idle**: Robots waiting for their next assignment.
-  * **Fault / Offline**: Should normally be `0`. If greater than 0, check the Alerts tab immediately.
-* **AGV Status Donut Wheel**: A colored pie chart showing fleet distribution at a glance.
-* **Mission Activity Graph**: Shows how many deliveries were completed today vs. ongoing.
-* **Quick Lists (Bottom)**: See the last 3 deliveries, active warnings, and upcoming maintenance deadlines.
+### A. 4 Key Metric Cards
+1. **Total Fleet**: Total units in the facility, broken down into active, charging, and idle counts.
+2. **Cruising Velocity**: Fleet average speed in meters per second ($m/s$) and kilometers per hour ($km/h$).
+3. **Active Payload**: Total cargo weight ($kg$) and count of loaded pallets currently in transit.
+4. **Fleet Battery**: Overall average battery percentage and charging status.
+
+### B. Fleet Distribution & Energy Hub
+* **AGV Fleet Status Donut**: A color-coded circular breakdown showing how many units are Auto-Looping (cyan), Charging (amber), Idle (emerald), or in Fault (red).
+* **Charging & Energy Dynamics**: Shows battery distribution brackets ($\ge 75\%$ Nominal, $50-74\%$ Cruising, $20-49\%$ Low, and $<20\%$ Critical) alongside the number of active charging bays.
+
+### C. Fleet Health & Exceptions Watchdog
+* **If everything is normal**: Displays a clean green badge: **"All Fleet Units Operating Nominally"** with floor deployment counts. Healthy robots do not clutter your dashboard!
+* **If a robot has an issue** (e.g., collision fault, obstacle block, or critical battery $<20\%$): Surfaces **only that specific vehicle** with an immediate **"Quick Fix"** button to restore operation.
+* **Facility Filter & Export**: Use the dropdown at the top to filter the dashboard by facility, or click **"Export"** to download an instant telemetry report as a JSON file.
 
 ---
 
 ## 🗺️ 4. Using the Live Map (Digital Twin)
 
-Click **Live Map** in the left menu. This displays a bird's-eye view of your entire warehouse.
+Click **Live Map** in the left menu to view the bird's-eye blueprint of your facility.
 
-### How to Move Around the Map:
-* **Zoom In & Out**:
-  * **Mouse**: Roll your mouse wheel up or down.
-  * **Trackpad**: Pinch with two fingers to zoom in or spread to zoom out.
-  * **On-Screen Buttons**: Click the **`+`** and **`-`** buttons floating on the top-left of the map.
-  * **Reset View**: Click the percentage button (e.g., `100%`) or the circular reset arrow to immediately re-center the map.
-* **Pan (Slide Around)**:
-  * Click and hold anywhere on the map, then drag your mouse to pan around.
-  * On a trackpad, slide with two fingers.
+### Navigating the Map:
+* **Zoom**: Roll your mouse wheel up/down, pinch your trackpad, or click the **`+`** and **`-`** buttons on the floating map toolbar.
+* **Pan**: Click and drag anywhere on the map floor to slide around.
+* **Reset**: Click the zoom percentage button (e.g., `100%`) or the reset icon to re-center the blueprint instantly.
+* **Switch Floors**: Use the floor selector bar at the top to view Ground Floor, Floor 1, or Basement decks.
 
-### What the Colors Mean:
-* 🟢 **Green Moving Circle**: Robot actively transporting cargo.
-* 🟡 **Amber Circle**: Robot parked in a charging dock.
-* 🔵 **Blue Line**: The active corridor path the robot is currently following.
-* 🟠 **Dashed Line**: The planned return path for outbound delivery.
-
-### Inspecting a Robot:
-* **Click on any robot pin** on the map (for example, `AGV-01 Transporting`).
-* A card pops up on the right showing:
-  * Exact current speed (e.g., `1.2 m/s`).
-  * Battery charge percentage (e.g., `78%`).
-  * Current room/aisle location.
-  * A blue **Control AGV** button to jump straight into its detailed cockpit.
+### Understanding Robot Markers on the Map:
+* **Vehicle Shapes**: Each robot appears as its actual vehicle model:
+  * 🚜 **Forklifts** have front forks and lifting masts.
+  * 🤖 **AMRs** appear as sleek rounded pucks with laser bands.
+  * 🚚 **Flatbeds** have wide cargo decks with rollers.
+  * 🚛 **Tuggers** have tractor cabs with rear hitches.
+* **Vehicle Status Tag**: Clean, compact pill below each vehicle showing:
+  `ID • Status • Battery%` (e.g., **`AMR-01 • Auto-Pilot • 36%`**).
+* **Status LED Dot**:
+  * 🟢 **Green**: Active on guide path (Auto-Pilot).
+  * 🔵 **Cyan**: Connected to charging pad (Charging).
+  * 🟡 **Amber**: Low battery, returning to dock (Docking).
+  * 🔴 **Red**: Collision obstacle or system fault (Stopped).
 
 ---
 
-## 🤖 5. Checking & Controlling Your Robots (AGVs)
+## 🤖 5. Managing & Teleoperating Robots (AGVs / Robots)
 
-### Viewing the Fleet List:
-Click **AGVs / Robots** in the left menu:
-* You will see a clean table listing every robot in your fleet.
-* You can filter by type (**Pallet Mover**, **Tugger**, **Shelf Carrier**, or **Inspection**) or by status (**In Mission**, **Charging**, **Idle**).
-* **Adding a New Robot**: Click the blue **+ Add AGV** button in the top right. Enter an ID (e.g., `AGV-07`), choose its type, and hit **Save AGV**.
+Click **AGVs / Robots** in the left menu. This is your comprehensive fleet registry.
 
-### Robot Cockpit & Live Camera Feed:
-Click on any robot row in the table (or click its pin on the map):
-* **3D Robot Illustration**: Displays the robot's physical model, LiDAR sensor dome, and payload deck.
-* **Live Telemetry Grid**: Shows real-time Battery, Speed, Current Mission, and Hours of Uptime.
-* **Live Video Feed**: The **Live Camera** tab shows the real-time forward optical camera from the robot so you can see what is in front of it!
-* **Quick Action Controls**:
-  * **Start Mission**: Dispatch the robot on its pending task.
-  * **Pause**: Temporarily pause the robot in place.
-  * **Stop**: Immediately stop the robot.
-  * **Return to Dock**: Send the robot back to the charging bay to charge its battery.
-* **Current Position Mini-Map**: Shows a thumbnail of where the robot is located on the plant floor.
+### Adding & Editing Robots:
+* **Add Robot**: Click **+ Add AGV** in the top right. Select the vehicle type (Forklift, AMR, Flatbed, Tugger), name, and assigned floor.
+* **Edit Robot**: Click the **Pencil icon** on any robot card to edit its payload capacity or rename it.
 
----
+### Opening the Robot Cockpit (Robot Detail View):
+Click on any robot card to enter its dedicated cockpit:
 
-## 🗺️ 6. Creating a Mission & Drawing Routes
-
-Need to send an AGV from **Assembly Line 1** to the **Packing Area**? Here is how to create a mission in 4 easy steps:
-
-Click **Missions** on the left menu $\rightarrow$ Click the blue **+ Create Mission** button.
-
-### Step 1: Route & Waypoint Planner
-On the left side, fill in the basics:
-* **Mission Name**: Give it a clear name (e.g., *Pallet delivery to Dock 3*).
-* **Priority**: Choose **High**, **Medium**, or **Low**.
-* **Pick Up & Drop Off Locations**: e.g., *Station A* $\rightarrow$ *Packing*.
-
-**Using the Interactive Route Planner (Right Side)**:
-* **Add a Stop**: Simply **click anywhere on the floor map**! A new numbered checkpoint pin will drop exactly where you clicked.
-* **Move a Stop**: Click and **drag any pin** to reposition it along an open aisle corridor.
-* **Delete a Stop**: In the chips below the map, click the small **`×`** on any waypoint to remove it.
-* **Undo / Reset**: Click **Undo** to remove the last point, or **Reset** to return to start and end pins.
-* **1-Click Presets**: Want a standard route? Click one of the preset pills:
-  * **Line 1 $\rightarrow$ Packing**
-  * **Machining $\rightarrow$ Dispatch**
-  * **Full Plant Patrol**
-* **Notice the Metrics**: The system automatically measures the total path distance (e.g., `52 meters`) and calculates estimated transit time (e.g., `~3 minutes`).
-
-Click **Next: Settings**.
-
-### Step 2: Safety Settings
-* **Speed Ceiling**: Choose standard (`1.2 m/s`) or safety caution for tight corridors (`0.8 m/s`).
-* **Obstacle Detection Distance**: Choose how far ahead the LiDAR laser looks for pedestrians or boxes (`2.5 meters`).
-* **Warning Sound**: Choose between flashing strobe lights or lights + beeper.
-* Click **Next: Assign**.
-
-### Step 3: Assign a Robot
-* You will see available AGVs with their current battery percentages.
-* Pick a robot with good battery (e.g., `AGV-01` with 78% battery).
-* Click **Next: Confirm**.
-
-### Step 4: Review & Dispatch
-* Review the summary card (Route, Distance, Travel Time, Assigned AGV).
-* Click **Dispatch Mission**.
-* The robot immediately receives the route and starts moving!
+1. **3D/Vector Model Illustration**: Displays an accurate rendering of the robot's physical model (Forklift with pallet, AMR puck, Tugger, or Flatbed) highlighted in its custom theme color.
+2. **Live Telemetry Grid**: Real-time readouts for battery percentage, dynamic discharge rate, speed, payload weight, assigned floor, and uptime.
+3. **Live ROS 2 Logs Console**:
+   * Generates realistic telemetry events (odometry `/odom`, laser scans, battery cell voltages) automatically every few seconds.
+   * Color-coded tags: `INFO` (blue), `WARN` (amber), `DEBUG` (purple), `ERROR` (red).
+   * Click **"+ Add Log"** to immediately trigger a test log entry, or **"Clear"** to reset the console.
+4. **Current Position Mini-Map**:
+   * A dynamic vector mini-map rendering the robot's real guide path and waypoints.
+   * The robot marker moves smoothly across the mini-map in real time with an arrow pointing in its heading direction.
+   * Displays exact millimetric CAD coordinates (`X: mm`, `Y: mm`, `θ: °`) and the closest warehouse station (`Near Docking Bay 01`).
+   * Click **"View on Map"** to jump directly to this robot on the full Live Map.
+5. **Manual Teleoperation (Drive [WASD])**:
+   * Click the blue **"Drive [WASD]"** button to open the teleop drawer.
+   * Use your keyboard:
+     * **`W`** = Drive Forward
+     * **`S`** = Drive Reverse
+     * **`A`** = Steer Left
+     * **`D`** = Steer Right
+   * The robot switches to Manual Teleop mode and responds instantly.
+   * Click **"Release Control"** or press E-Stop at any time to return to autonomous guide looping.
+6. **Training Simulations (Dropdown Menu)**:
+   * Click the three dots (`...`) in the top right to test safety protocols:
+     * **Send to Charger**: Manually routes the vehicle to the nearest charging station.
+     * **Simulate Low Battery (<10%)**: Forces the robot to trigger its low-battery docking routine.
+     * **Simulate Fault & Auto-Fix**: Triggers a simulated obstacle halt, tests alert broadcasting, and demonstrates the auto-recovery watchdog.
 
 ---
 
-## ⏰ 7. Scheduling Automated Recurring Deliveries
+## 🗺️ 6. Waypoint Route Planner
 
-Do you have a regular delivery that needs to happen every 2 hours throughout a shift?
+Need to plot or modify a robot's navigation path?
 
-1. Click **Schedules** in the left menu.
-2. Click **+ Add Schedule**.
-3. Name the schedule (e.g., *Raw Material Replenishment*).
-4. Select frequency (e.g., *Every 2 hours*).
-5. Set operating hours (e.g., *06:00 - 22:00*).
-6. Click **Save Schedule**.
-7. You can turn any automated schedule **ON** or **OFF** at any time using the toggle switch in the table.
+1. Open **Maps & Facilities** or the **Route Planner**.
+2. **Click anywhere on the floor plan** to drop a new numbered checkpoint pin.
+3. **Drag and drop** existing waypoint pins along aisles to avoid obstacles.
+4. The system calculates total travel distance ($meters$) and transit ETA ($minutes$) automatically using Euclidean geometry.
+5. Click **"Save Route"** to dispatch the path to the vehicle.
 
 ---
 
-## 🔧 8. Maintenance & Health Checks
+## 🔔 7. Alerts & Safety Notifications
 
-Click **Maintenance** in the left menu:
-* View scheduled checkups for motors, wheels, battery cells, and LiDAR sensors.
-* Tabs:
-  * **Upcoming**: Maintenance tasks scheduled for the coming weeks.
-  * **Overdue**: Items that need urgent inspection.
-  * **History**: Past completed service records.
-
----
-
-## 🔔 9. Responding to Alerts & Obstacle Warnings
-
-Click **Alerts** in the left menu (or click the Bell icon in the top header):
-* **Red Alerts (Danger)**: A robot detected an obstacle in its direct path and had to stop.
-  * Click **Locate Unit** to jump to the map and see where it is blocked.
-  * Once an operator on the floor clears the box or pallet, click **Acknowledge** to dismiss the alert.
-* **Yellow Alerts (Warning)**: Low battery notifications (e.g., below 30%) or transit delays.
-* **Blue Alerts (Info)**: Automatic reroutes around congested doorways.
+Click **Alerts** in the left menu to view the real-time safety log:
+* **Danger (Red)**: Critical hardware faults or E-Stop halts requiring operator inspection.
+* **Warning (Amber)**: Low battery reserve notifications ($<20\%$) or path clearance warnings.
+* **Info (Blue)**: Routine charging undock events and mission completions.
+* Click **"Resolve"** on any alert once cleared, or click **"Generate Test Alert"** to practice triage drills.
 
 ---
 
-## 🎨 10. Switching Dark and Light Mode
+## 💡 Quick Tips for Daily Shift Supervisors
 
-* Click the **Sun / Moon icon** in the top navigation bar at any time.
-* **Dark Mode**: Uses modern industrial gray and obsidian tones, ideal for low-light control rooms or long shifts.
-* **Light Mode**: Clean daylight white and slate surfaces, ideal for brightly lit factory offices.
-* Your preference is automatically saved on your computer and remembered next time you open the app.
-
----
-
-## 💡 Quick Tips & Best Practices
-
-| Task | Tip |
-| :--- | :--- |
-| **Lost on the Map?** | Click the reset percentage button (`100%`) on the map toolbar to immediately center your view. |
-| **Robot Battery Low?** | Click on the robot in the list or map, and click **Return to Dock**. It will drive itself to the charging bay. |
-| **Aisle Blocked?** | In the Waypoint Route Planner, simply drag the route pin into an alternate corridor to route around construction or spills. |
-| **Immediate Floor Freeze?** | Hit the red **E-Stop** button at the top-right of your screen. |
+* **Shift Start**: Check the Dashboard. If **Fleet Health & Exceptions** displays green, all robots are running nominally.
+* **Monitoring Batteries**: Check the **Charging Dynamics** card on the dashboard. Units below $20\%$ will automatically dock and undock when fully charged.
+* **Quick Tracking**: Clicking any robot's **"Map"** button automatically switches to that robot's floor and centers it on the Live Map.
+* **Keyboard Shortcut**: Press `Ctrl + B` (or `Cmd + B`) at any time to collapse the sidebar for wide-screen monitoring.

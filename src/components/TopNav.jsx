@@ -63,8 +63,6 @@ export default function TopNav({
         return "AGV Detail";
       case "map":
         return "Live Map";
-      case "analytics":
-        return "Fleet Analytics";
       case "maintenance":
         return "Maintenance";
       case "alerts":
@@ -92,6 +90,19 @@ export default function TopNav({
           title="Open Menu"
         >
           <Menu className="w-5 h-5" />
+        </button>
+
+        <button
+          onClick={() => navCtx?.toggleSidebarCollapse?.()}
+          className="hidden md:flex p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          title={
+            navCtx?.sidebarCollapsed
+              ? "Expand Sidebar (Ctrl+B)"
+              : "Collapse Sidebar to Icon Rail (Ctrl+B)"
+          }
+          aria-label="Toggle Sidebar Collapse"
+        >
+          <Menu className="w-4 h-4" />
         </button>
 
         <div className="min-w-0">
@@ -187,8 +198,8 @@ export default function TopNav({
           {/* 3. Load Demo Fleet */}
           <button
             onClick={() => fleetCtx?.loadRichDemoData?.()}
-            title="Load Multi-Building Demo Fleet"
-            aria-label="Load Multi-Building Demo Fleet"
+            title="Load Demo Fleet (10 AGVs: 5 Forklifts & 5 Flatbed Carriers across Facilities)"
+            aria-label="Load Demo Fleet (10 AGVs: 5 Forklifts & 5 Flatbed Carriers across Facilities)"
             className="p-1.5 sm:px-2 sm:py-1 rounded-md text-slate-600 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400 hover:bg-white dark:hover:bg-slate-900 transition-colors flex items-center gap-1.5"
           >
             <Sparkles className="w-3.5 h-3.5 text-emerald-500" />

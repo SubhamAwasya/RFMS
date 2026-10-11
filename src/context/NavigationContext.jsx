@@ -8,6 +8,23 @@ export function NavigationProvider({ children, initialView = VIEWS.DASHBOARD }) 
   const [selectedAgvId, setSelectedAgvId] = useState("FL-01");
   const [mapSelectedAgvId, setMapSelectedAgvId] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("rfms_sidebar_collapsed") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const toggleSidebarCollapse = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("rfms_sidebar_collapsed", String(next));
+      } catch (e) {}
+      return next;
+    });
+  }, []);
 
   const navigateTo = useCallback((view, options = {}) => {
     setCurrentView(view);
@@ -50,6 +67,9 @@ export function NavigationProvider({ children, initialView = VIEWS.DASHBOARD }) 
     setMapSelectedAgvId,
     mobileNavOpen,
     setMobileNavOpen,
+    sidebarCollapsed,
+    setSidebarCollapsed,
+    toggleSidebarCollapse,
     navigateTo,
     selectAgv,
     selectAgvOnMap,

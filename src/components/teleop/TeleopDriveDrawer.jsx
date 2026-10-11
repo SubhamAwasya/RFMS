@@ -136,11 +136,11 @@ export default function TeleopDriveDrawer({ onClose }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-200 font-semibold">
               <Compass className="w-3.5 h-3.5 text-blue-500" />
-              <span>Heading: {activeAgv?.position?.headingDeg ?? activeAgv?.heading ?? 180}°</span>
+              <span>Heading: {Math.round((((activeAgv?.position?.headingDeg ?? activeAgv?.heading ?? 180) % 360) + 360) % 360)}°</span>
             </div>
             <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
               <Battery className="w-3.5 h-3.5" />
-              <span>{Math.round(activeAgv?.battery || 100)}%</span>
+              <span>{typeof activeAgv?.battery === "number" ? activeAgv.battery.toFixed(1) : 100}%</span>
             </div>
           </div>
 

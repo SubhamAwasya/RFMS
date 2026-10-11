@@ -22,7 +22,6 @@ export default function AddRobotModal({ agvCount, onAddAgv }) {
   const [newId, setNewId] = useState(`AGV-0${agvCount + 1}`);
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState("Forklift AGV");
-  const [status, setStatus] = useState("Auto-Pilot (Looping)");
   const [buildingId, setBuildingId] = useState(fleetCtx?.activeBuildingId || "bldg-1");
   const [floorId, setFloorId] = useState(fleetCtx?.activeFloorId || "floor-g");
   const [newLocation, setNewLocation] = useState("Inbound Staging Area");
@@ -48,13 +47,13 @@ export default function AddRobotModal({ agvCount, onAddAgv }) {
         type: newType,
         buildingId: buildingId || "bldg-1",
         floorId: floorId || "floor-g",
-        status: status || "Auto-Pilot (Looping)",
+        status: "Auto-Pilot (Looping)",
         battery: 100,
         speed: 0.0,
         cruiseSpeed: 1.2,
         payload: newType === "Flatbed Payload Carrier AGV" ? "1,200 kg Max Deck" : "0 kg",
         location: resolvedLocation,
-        currentMission: status === "Auto-Pilot (Looping)" ? "Continuous Looping Path" : status,
+        currentMission: "Continuous Looping Path",
         uptime: "0h 00m",
         coordinates: { x: 220, y: 220 },
         position: { x: 220, y: 220, headingDeg: 0 },
@@ -151,40 +150,19 @@ export default function AddRobotModal({ agvCount, onAddAgv }) {
               </div>
             </div>
 
-            {/* Type & Operational State */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Vehicle Type
-                </label>
-                <select
-                  value={newType}
-                  onChange={(e) => setNewType(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none"
-                >
-                  <option value="Forklift AGV">Forklift AGV</option>
-                  <option value="Flatbed Payload Carrier AGV">Flatbed Payload Carrier AGV</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Initial Operational State
-                </label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none font-medium"
-                >
-                  <option value="Auto-Pilot (Looping)">Auto-Pilot (Looping)</option>
-                  <option value="Manual Teleop">Manual Teleop</option>
-                  <option value="Idle">Idle (Available)</option>
-                  <option value="Charging">Charging (Docked)</option>
-                  <option value="Waiting">Waiting (At Station)</option>
-                  <option value="Maintenance">Maintenance Required</option>
-                  <option value="Offline">Offline / Standby</option>
-                </select>
-              </div>
+            {/* Vehicle Type */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Vehicle Type
+              </label>
+              <select
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none"
+              >
+                <option value="Forklift AGV">Forklift AGV</option>
+                <option value="Flatbed Payload Carrier AGV">Flatbed Payload Carrier AGV</option>
+              </select>
             </div>
 
             {/* Facility & Floor Level Assignment */}

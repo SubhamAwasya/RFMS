@@ -5,7 +5,6 @@ export const VIEWS = Object.freeze({
   ROBOTS: "robots",
   ROBOT_DETAIL: "robot-detail",
   MAP: "map",
-  ANALYTICS: "analytics",
   MAINTENANCE: "maintenance",
   ALERTS: "alerts",
   FACILITIES: "facilities",
@@ -22,157 +21,158 @@ export const AGV_STATUS = Object.freeze({
   AUTO_LOOP: "Auto-Pilot (Looping)",
   MANUAL_TELEOP: "Manual Teleop",
   CHARGING: "Charging",
+  RETURNING_TO_CHARGER: "Returning to Charger",
+  FAULT: "Fault",
   IDLE: "Idle",
   STOPPED: "Stopped",
   BLOCKED: "Obstacle Blocked",
+  LOW_BATTERY: "Low Battery",
 });
 
 // Designated Autonomous Guide Loops per Floor (1000 x 650 CAD Grid)
 export const DEFAULT_FLOOR_PATHS = {
   "floor-g": [
-    { id: "wp-1", label: "Docking Bay 01", x: 170, y: 140 },
-    { id: "wp-2", label: "North Corridor Junction", x: 440, y: 140 },
-    { id: "wp-3", label: "Charger Pad Alpha", x: 880, y: 140 },
-    { id: "wp-4", label: "High-Bay Storage East", x: 880, y: 535 },
-    { id: "wp-5", label: "Central Distribution Hub", x: 440, y: 535 },
-    { id: "wp-6", label: "Inbound Receiving West", x: 170, y: 535 },
+    { id: "wp-fg-1", label: "Docking Bay 01", x: 170, y: 135 },
+    { id: "wp-fg-2", label: "North Corridor Junction", x: 500, y: 135 },
+    { id: "wp-fg-3", label: "Charger Pad Alpha", x: 880, y: 135 },
+    { id: "wp-fg-4", label: "High-Bay Storage East", x: 880, y: 205 },
+    { id: "wp-fg-5", label: "Central Distribution Hub", x: 500, y: 205 },
+    { id: "wp-fg-6", label: "Inbound Receiving West", x: 170, y: 205 },
   ],
   "floor-1": [
-    { id: "wp-f1-1", label: "Assembly Station 1", x: 220, y: 180 },
-    { id: "wp-f1-2", label: "Quality Inspection Bay", x: 780, y: 180 },
-    { id: "wp-f1-3", label: "Component Staging East", x: 780, y: 480 },
-    { id: "wp-f1-4", label: "Packaging Loop West", x: 220, y: 480 },
+    { id: "wp-f1-1", label: "Sorter Induction Bay 01", x: 220, y: 180 },
+    { id: "wp-f1-2", label: "Mezzanine Cross-Aisle", x: 500, y: 180 },
+    { id: "wp-f1-3", label: "Mezzanine Fast Charger", x: 780, y: 180 },
+    { id: "wp-f1-4", label: "Quality Inspection Deck", x: 780, y: 260 },
+    { id: "wp-f1-5", label: "Sorter Express Return", x: 500, y: 260 },
+    { id: "wp-f1-6", label: "Induction Queue West", x: 220, y: 260 },
   ],
   "floor-b2-g": [
-    { id: "wp-b2g-1", label: "ASRS Induction Transfer", x: 200, y: 200 },
+    { id: "wp-b2g-1", label: "ASRS Induction Bay", x: 200, y: 200 },
     { id: "wp-b2g-2", label: "High-Bay Aisle Transit", x: 500, y: 200 },
-    { id: "wp-b2g-3", label: "Heavy Fleet Depot Charger", x: 800, y: 200 },
-    { id: "wp-b2g-4", label: "South Pallet Rack Turnout", x: 800, y: 500 },
-    { id: "wp-b2g-5", label: "ASRS Cross-Corridor", x: 500, y: 500 },
-    { id: "wp-b2g-6", label: "Induction Return Spur", x: 200, y: 500 },
+    { id: "wp-b2g-3", label: "Heavy Depot Charger", x: 800, y: 200 },
+    { id: "wp-b2g-4", label: "ASRS Buffer East", x: 800, y: 260 },
+    { id: "wp-b2g-5", label: "High-Bay Cross-Aisle", x: 500, y: 260 },
+    { id: "wp-b2g-6", label: "Pallet Induction Return", x: 200, y: 260 },
   ],
   "floor-b2-1": [
     { id: "wp-b21-1", label: "Order Consolidation Hub", x: 240, y: 180 },
-    { id: "wp-b21-2", label: "Picking Deck Main Loop", x: 760, y: 180 },
-    { id: "wp-b21-3", label: "Tote Dispatch Carousel", x: 760, y: 460 },
-    { id: "wp-b21-4", label: "Pack Station Return", x: 240, y: 460 },
-  ],
-  "floor-b3-mfg": [
-    { id: "wp-b3m-1", label: "Robotic Cell 01 Feeder", x: 250, y: 220 },
-    { id: "wp-b3m-2", label: "Precision Assembly Line", x: 500, y: 220 },
-    { id: "wp-b3m-3", label: "Cleanroom Wireless Charger", x: 750, y: 220 },
-    { id: "wp-b3m-4", label: "Tooling & Die Station", x: 750, y: 460 },
-    { id: "wp-b3m-5", label: "Sub-Assembly Cell 03", x: 500, y: 460 },
-    { id: "wp-b3m-6", label: "Infeed Feeder Spur", x: 250, y: 460 },
-  ],
-  "floor-b3-1": [
-    { id: "wp-b31-1", label: "Cleanroom Ingress Airlock", x: 260, y: 200 },
-    { id: "wp-b31-2", label: "Component Staging Bay", x: 740, y: 200 },
-    { id: "wp-b31-3", label: "Sub-Assembly Buffer East", x: 740, y: 460 },
-    { id: "wp-b31-4", label: "Cleanroom Return Spur", x: 260, y: 460 },
-  ],
-  "floor-b4-g": [
-    { id: "wp-b4g-1", label: "Cold-Vault Fast Gate 01", x: 240, y: 180 },
-    { id: "wp-b4g-2", label: "Sub-Zero Main Corridor", x: 500, y: 180 },
-    { id: "wp-b4g-3", label: "Sub-Zero Buffer Platform", x: 780, y: 180 },
-    { id: "wp-b4g-4", label: "Deep Freeze Aisle South", x: 780, y: 500 },
-    { id: "wp-b4g-5", label: "Cold Chain Transit Cross", x: 500, y: 500 },
-    { id: "wp-b4g-6", label: "Refrigerated Return Dock", x: 240, y: 500 },
+    { id: "wp-b21-2", label: "Picking Deck Main Loop", x: 500, y: 180 },
+    { id: "wp-b21-3", label: "Mezzanine Depot Charger", x: 760, y: 180 },
+    { id: "wp-b21-4", label: "Quality Check Deck East", x: 760, y: 260 },
+    { id: "wp-b21-5", label: "Consolidation Express Line", x: 500, y: 260 },
+    { id: "wp-b21-6", label: "Consolidation Buffer West", x: 240, y: 260 },
   ],
 };
 
-// Distinct, non-overlapping autonomous looping routes for the multi-robot fleet (1000 x 650 CAD Grid)
+// Distinct, non-overlapping autonomous looping routes for the 10-robot fleet (1000 x 650 CAD Grid)
+// Divided across maps and facilities:
+// - Building A Ground Floor (floor-g): FL-01, FL-02, FB-01
+// - Building A Level 1 Mezzanine (floor-1): FL-03, FB-02
+// - Building B Ground Floor (floor-b2-g): FL-04, FB-03, FB-04
+// - Building B Level 1 Order Deck (floor-b2-1): FL-05, FB-05
 export const ROBOT_PATHS = {
-  // FL-01: North Inbound Logistics & Receiving Corridor (Cyan #06b6d4)
+  // FL-01: Building A Ground Floor - North Inbound Logistics Loop (Cyan #06b6d4)
   "FL-01": [
-    { id: "wp-fl1-1", label: "Docking Bay 01", x: 170, y: 140 },
-    { id: "wp-fl1-2", label: "Assembly Feed Junction", x: 480, y: 140 },
-    { id: "wp-fl1-3", label: "Charger Pad Alpha", x: 880, y: 140 },
-    { id: "wp-fl1-4", label: "North Transit East", x: 880, y: 240 },
-    { id: "wp-fl1-5", label: "North Corridor Central", x: 480, y: 240 },
-    { id: "wp-fl1-6", label: "Receiving Sort Bay", x: 170, y: 240 },
+    { id: "wp-fl1-1", label: "Docking Bay 01", x: 170, y: 135 },
+    { id: "wp-fl1-2", label: "North Transit Junction", x: 500, y: 135 },
+    { id: "wp-fl1-3", label: "Charger Pad Alpha", x: 880, y: 135 },
+    { id: "wp-fl1-4", label: "Charger Pad Beta", x: 880, y: 205 },
+    { id: "wp-fl1-5", label: "North Inspection Spine", x: 500, y: 205 },
+    { id: "wp-fl1-6", label: "Receiving Sort Bay", x: 170, y: 205 },
   ],
-  // FL-02: Central Assembly & Logistics Spine (Emerald #10b981)
+  // FL-02: Building A Ground Floor - South Assembly & Storage Loop (Emerald #10b981)
   "FL-02": [
-    { id: "wp-fl2-1", label: "Central Aisle Intake", x: 200, y: 300 },
-    { id: "wp-fl2-2", label: "Main Floor Crossway", x: 500, y: 300 },
-    { id: "wp-fl2-3", label: "Outbound Feed West", x: 820, y: 300 },
-    { id: "wp-fl2-4", label: "Packaging Buffer East", x: 820, y: 390 },
-    { id: "wp-fl2-5", label: "Central Logistics Spine", x: 500, y: 390 },
-    { id: "wp-fl2-6", label: "Kitting Transfer Bay", x: 200, y: 390 },
+    { id: "wp-fl2-1", label: "Kitting Infeed Bay", x: 170, y: 490 },
+    { id: "wp-fl2-2", label: "Assembly Transfer Mid", x: 500, y: 490 },
+    { id: "wp-fl2-3", label: "Finished Goods Staging", x: 860, y: 490 },
+    { id: "wp-fl2-4", label: "South Outbound Gate", x: 860, y: 560 },
+    { id: "wp-fl2-5", label: "Sub-Assembly Return", x: 500, y: 560 },
+    { id: "wp-fl2-6", label: "Kitting Return West", x: 170, y: 560 },
   ],
-  // FL-03: South High-Bay Racks & Outbound Dispatch (Amber #f59e0b)
-  "FL-03": [
-    { id: "wp-fl3-1", label: "High-Bay Aisle 1", x: 170, y: 480 },
-    { id: "wp-fl3-2", label: "Storage Cross-Aisle", x: 480, y: 480 },
-    { id: "wp-fl3-3", label: "Dispatch Transfer Alpha", x: 880, y: 480 },
-    { id: "wp-fl3-4", label: "Outbound Bay Gate", x: 880, y: 560 },
-    { id: "wp-fl3-5", label: "High-Bay Return South", x: 480, y: 560 },
-    { id: "wp-fl3-6", label: "Rack Infeed Station", x: 170, y: 560 },
-  ],
-  // FB-01: Flatbed Payload Carrier AGV - Heavy Freight Arterial Loop (Purple #8b5cf6)
+  // FB-01: Building A Ground Floor - Central Freight Arterial Loop (Blue #3b82f6)
   "FB-01": [
     { id: "wp-fb1-1", label: "West Freight Siding", x: 120, y: 340 },
-    { id: "wp-fb1-2", label: "North Cross-Aisle Junction", x: 340, y: 260 },
-    { id: "wp-fb1-3", label: "East Transfer Spur", x: 640, y: 260 },
-    { id: "wp-fb1-4", label: "Outbound Buffer Platform", x: 860, y: 340 },
-    { id: "wp-fb1-5", label: "South Cross-Aisle Transit", x: 640, y: 440 },
-    { id: "wp-fb1-6", label: "Heavy Kitting Staging", x: 340, y: 440 },
+    { id: "wp-fb1-2", label: "Freight Staging Crossway", x: 360, y: 310 },
+    { id: "wp-fb1-3", label: "Assembly Crossway", x: 640, y: 310 },
+    { id: "wp-fb1-4", label: "Outbound Dispatch Bay", x: 860, y: 340 },
+    { id: "wp-fb1-5", label: "Main Dispatch Siding", x: 640, y: 420 },
+    { id: "wp-fb1-6", label: "Heavy Kitting Buffer", x: 360, y: 420 },
   ],
-  // FL-04: North-West Cross Loop (Rose #f43f5e)
-  "FL-04": [
-    { id: "wp-fl4-1", label: "NW Pallet Intake", x: 260, y: 180 },
-    { id: "wp-fl4-2", label: "NW Quality Check", x: 410, y: 180 },
-    { id: "wp-fl4-3", label: "NW Staging Line", x: 410, y: 250 },
-    { id: "wp-fl4-4", label: "NW Return Crossway", x: 260, y: 250 },
+  // FL-03: Building A Level 1 - North Sorter Induction Loop (Amber #f59e0b)
+  "FL-03": [
+    { id: "wp-fl3-1", label: "Sorter Induction Bay 01", x: 220, y: 180 },
+    { id: "wp-fl3-2", label: "Mezzanine Cross-Aisle", x: 500, y: 180 },
+    { id: "wp-fl3-3", label: "Mezzanine Fast Charger", x: 780, y: 180 },
+    { id: "wp-fl3-4", label: "Quality Inspection Deck", x: 780, y: 260 },
+    { id: "wp-fl3-5", label: "Sorter Express Return", x: 500, y: 260 },
+    { id: "wp-fl3-6", label: "Induction Queue West", x: 220, y: 260 },
   ],
-  // FB-02: East Staging Heavy Transport Loop (Blue #3b82f6)
+  // FB-02: Building A Level 1 - South Packaging & Chute Loop (Orange #f97316)
   "FB-02": [
-    { id: "wp-fb2-1", label: "East Bulk Cargo Infeed", x: 700, y: 200 },
-    { id: "wp-fb2-2", label: "East Buffer Platform", x: 860, y: 200 },
-    { id: "wp-fb2-3", label: "Outbound Ramp East", x: 860, y: 330 },
-    { id: "wp-fb2-4", label: "Transfer Siding Return", x: 700, y: 330 },
+    { id: "wp-fb2-1", label: "Packaging Bay 02", x: 220, y: 480 },
+    { id: "wp-fb2-2", label: "Conveyor Link Mid", x: 500, y: 480 },
+    { id: "wp-fb2-3", label: "Parcel Chute Dispatch", x: 780, y: 480 },
+    { id: "wp-fb2-4", label: "Cross-Dock Buffer", x: 780, y: 400 },
+    { id: "wp-fb2-5", label: "Automated Tote Return", x: 500, y: 400 },
+    { id: "wp-fb2-6", label: "Packaging Buffer West", x: 220, y: 400 },
   ],
-  // TUG-01: Automated Tugger Train Arterial Loop (Orange #f97316)
-  "TUG-01": [
-    { id: "wp-tug1-1", label: "Tugger Depot Station", x: 280, y: 240 },
-    { id: "wp-tug1-2", label: "Midway Distribution Stop", x: 620, y: 240 },
-    { id: "wp-tug1-3", label: "Assembly Train Dropoff", x: 620, y: 320 },
-    { id: "wp-tug1-4", label: "Return Loop West", x: 280, y: 320 },
+  // FL-04: Building B Ground Floor - North ASRS Induction Loop (Rose #f43f5e)
+  "FL-04": [
+    { id: "wp-fl4-1", label: "ASRS Induction Bay", x: 200, y: 200 },
+    { id: "wp-fl4-2", label: "High-Bay Aisle Transit", x: 500, y: 200 },
+    { id: "wp-fl4-3", label: "Heavy Depot Charger", x: 800, y: 200 },
+    { id: "wp-fl4-4", label: "ASRS Buffer East", x: 800, y: 260 },
+    { id: "wp-fl4-5", label: "High-Bay Cross-Aisle", x: 500, y: 260 },
+    { id: "wp-fl4-6", label: "Pallet Induction Return", x: 200, y: 260 },
   ],
-  // AMR-01: Autonomous Mobile Robot - Fast Sort Transit (Teal #14b8a6)
-  "AMR-01": [
-    { id: "wp-amr1-1", label: "Sort Express Intake", x: 550, y: 150 },
-    { id: "wp-amr1-2", label: "Sort Cross-Link", x: 730, y: 150 },
-    { id: "wp-amr1-3", label: "Sort Chute Feeder", x: 730, y: 220 },
-    { id: "wp-amr1-4", label: "Express Return Line", x: 550, y: 220 },
+  // FB-03: Building B Ground Floor - Central Heavy Transit Spur (Teal #14b8a6)
+  "FB-03": [
+    { id: "wp-fb3-1", label: "Heavy Pallet West Infeed", x: 180, y: 340 },
+    { id: "wp-fb3-2", label: "Central ASRS Spine", x: 480, y: 340 },
+    { id: "wp-fb3-3", label: "Cross-Dock Staging East", x: 820, y: 340 },
+    { id: "wp-fb3-4", label: "East Staging Turnout", x: 820, y: 410 },
+    { id: "wp-fb3-5", label: "Heavy Transit Corridor", x: 480, y: 410 },
+    { id: "wp-fb3-6", label: "Infeed Turnout West", x: 180, y: 410 },
   ],
-  // AMR-02: South-West Feeder Loop (Lime #84cc16)
-  "AMR-02": [
-    { id: "wp-amr2-1", label: "Kitting Infeed Alpha", x: 220, y: 410 },
-    { id: "wp-amr2-2", label: "Cell Assembly Transit", x: 420, y: 410 },
-    { id: "wp-amr2-3", label: "Parts Buffer West", x: 420, y: 470 },
-    { id: "wp-amr2-4", label: "Kitting Return Track", x: 220, y: 470 },
+  // FB-04: Building B Ground Floor - South Outbound Freight Loop (Fuchsia #d946ef)
+  "FB-04": [
+    { id: "wp-fb4-1", label: "High-Bay Transfer Bay", x: 200, y: 480 },
+    { id: "wp-fb4-2", label: "South Transit Main", x: 500, y: 480 },
+    { id: "wp-fb4-3", label: "Outbound Dispatch Siding", x: 800, y: 480 },
+    { id: "wp-fb4-4", label: "Outbound Rail Gate", x: 800, y: 550 },
+    { id: "wp-fb4-5", label: "Storage Cross-Return", x: 500, y: 550 },
+    { id: "wp-fb4-6", label: "Pallet Return Dock", x: 200, y: 550 },
   ],
-  // FL-05: South-East High Rack Circuit (Indigo #6366f1)
+  // FL-05: Building B Level 1 - North Consolidation & Picking Loop (Violet #8b5cf6)
   "FL-05": [
-    { id: "wp-fl5-1", label: "High-Bay Rack 05 Infeed", x: 600, y: 410 },
-    { id: "wp-fl5-2", label: "Rack 07 Dispatch Point", x: 840, y: 410 },
-    { id: "wp-fl5-3", label: "Narrow-Aisle Turnout", x: 840, y: 480 },
-    { id: "wp-fl5-4", label: "Storage Return Crossway", x: 600, y: 480 },
+    { id: "wp-fl5-1", label: "Order Consolidation Hub", x: 240, y: 180 },
+    { id: "wp-fl5-2", label: "Picking Deck Main Loop", x: 500, y: 180 },
+    { id: "wp-fl5-3", label: "Mezzanine Depot Charger", x: 760, y: 180 },
+    { id: "wp-fl5-4", label: "Quality Check Deck East", x: 760, y: 260 },
+    { id: "wp-fl5-5", label: "Consolidation Express Line", x: 500, y: 260 },
+    { id: "wp-fl5-6", label: "Consolidation Buffer West", x: 240, y: 260 },
+  ],
+  // FB-05: Building B Level 1 - South Tote Carousel & Dispatch Loop (Indigo #6366f1)
+  "FB-05": [
+    { id: "wp-fb5-1", label: "Pack Station Return", x: 240, y: 460 },
+    { id: "wp-fb5-2", label: "Tote Transit Crossway", x: 500, y: 460 },
+    { id: "wp-fb5-3", label: "Tote Dispatch Carousel", x: 760, y: 460 },
+    { id: "wp-fb5-4", label: "Dispatch Chute North", x: 760, y: 380 },
+    { id: "wp-fb5-5", label: "Fast Dispatch Transit", x: 500, y: 380 },
+    { id: "wp-fb5-6", label: "Packing Feed Spur", x: 240, y: 380 },
   ],
 };
 
-// Supported Industrial AGV Vehicle Models
+// Supported Industrial AGV Vehicle Models (Strictly 2 Types)
 export const ROBOT_TYPES = Object.freeze({
   FORKLIFT: "Forklift AGV",
   FLATBED_CARRIER: "Flatbed Payload Carrier AGV",
-  TUGGER: "Automated Tow Tractor AGV",
-  AMR: "Autonomous Mobile Robot AMR",
 });
 
-// Unique color theme association per AGV
+// Unique color theme association per AGV across the 10-robot fleet
 export const ROBOT_COLOR_THEMES = {
+  // 1. FL-01: Cyan
   "FL-01": {
     name: "Cyan",
     hex: "#06b6d4",
@@ -184,6 +184,7 @@ export const ROBOT_COLOR_THEMES = {
     radarHalo: "fill-cyan-500/20 stroke-cyan-400",
     badgeBorder: "border-cyan-500",
   },
+  // 2. FL-02: Emerald
   "FL-02": {
     name: "Emerald",
     hex: "#10b981",
@@ -195,6 +196,19 @@ export const ROBOT_COLOR_THEMES = {
     radarHalo: "fill-emerald-500/20 stroke-emerald-400",
     badgeBorder: "border-emerald-500",
   },
+  // 3. FB-01: Blue
+  "FB-01": {
+    name: "Blue",
+    hex: "#3b82f6",
+    strokeClass: "stroke-blue-500 dark:stroke-blue-400",
+    fillClass: "fill-blue-500",
+    bgClass: "bg-blue-500",
+    textClass: "text-blue-600 dark:text-blue-400",
+    glow: "rgba(59, 130, 246, 0.28)",
+    radarHalo: "fill-blue-500/20 stroke-blue-400",
+    badgeBorder: "border-blue-500",
+  },
+  // 4. FL-03: Amber
   "FL-03": {
     name: "Amber",
     hex: "#f59e0b",
@@ -206,17 +220,19 @@ export const ROBOT_COLOR_THEMES = {
     radarHalo: "fill-amber-500/20 stroke-amber-400",
     badgeBorder: "border-amber-500",
   },
-  "FB-01": {
-    name: "Purple",
-    hex: "#8b5cf6",
-    strokeClass: "stroke-purple-500 dark:stroke-purple-400",
-    fillClass: "fill-purple-500",
-    bgClass: "bg-purple-500",
-    textClass: "text-purple-600 dark:text-purple-400",
-    glow: "rgba(139, 92, 246, 0.28)",
-    radarHalo: "fill-purple-500/20 stroke-purple-400",
-    badgeBorder: "border-purple-500",
+  // 5. FB-02: Orange
+  "FB-02": {
+    name: "Orange",
+    hex: "#f97316",
+    strokeClass: "stroke-orange-500 dark:stroke-orange-400",
+    fillClass: "fill-orange-500",
+    bgClass: "bg-orange-500",
+    textClass: "text-orange-600 dark:text-orange-400",
+    glow: "rgba(249, 115, 22, 0.28)",
+    radarHalo: "fill-orange-500/20 stroke-orange-400",
+    badgeBorder: "border-orange-500",
   },
+  // 6. FL-04: Rose
   "FL-04": {
     name: "Rose",
     hex: "#f43f5e",
@@ -228,29 +244,8 @@ export const ROBOT_COLOR_THEMES = {
     radarHalo: "fill-rose-500/20 stroke-rose-400",
     badgeBorder: "border-rose-500",
   },
-  "FB-02": {
-    name: "Blue",
-    hex: "#3b82f6",
-    strokeClass: "stroke-blue-500 dark:stroke-blue-400",
-    fillClass: "fill-blue-500",
-    bgClass: "bg-blue-500",
-    textClass: "text-blue-600 dark:text-blue-400",
-    glow: "rgba(59, 130, 246, 0.28)",
-    radarHalo: "fill-blue-500/20 stroke-blue-400",
-    badgeBorder: "border-blue-500",
-  },
-  "TUG-01": {
-    name: "Orange",
-    hex: "#f97316",
-    strokeClass: "stroke-orange-500 dark:stroke-orange-400",
-    fillClass: "fill-orange-500",
-    bgClass: "bg-orange-500",
-    textClass: "text-orange-600 dark:text-orange-400",
-    glow: "rgba(249, 115, 22, 0.28)",
-    radarHalo: "fill-orange-500/20 stroke-orange-400",
-    badgeBorder: "border-orange-500",
-  },
-  "AMR-01": {
+  // 7. FB-03: Teal
+  "FB-03": {
     name: "Teal",
     hex: "#14b8a6",
     strokeClass: "stroke-teal-500 dark:stroke-teal-400",
@@ -261,18 +256,32 @@ export const ROBOT_COLOR_THEMES = {
     radarHalo: "fill-teal-500/20 stroke-teal-400",
     badgeBorder: "border-teal-500",
   },
-  "AMR-02": {
-    name: "Lime",
-    hex: "#84cc16",
-    strokeClass: "stroke-lime-500 dark:stroke-lime-400",
-    fillClass: "fill-lime-500",
-    bgClass: "bg-lime-500",
-    textClass: "text-lime-600 dark:text-lime-400",
-    glow: "rgba(132, 204, 22, 0.28)",
-    radarHalo: "fill-lime-500/20 stroke-lime-400",
-    badgeBorder: "border-lime-500",
+  // 8. FB-04: Fuchsia
+  "FB-04": {
+    name: "Fuchsia",
+    hex: "#d946ef",
+    strokeClass: "stroke-fuchsia-500 dark:stroke-fuchsia-400",
+    fillClass: "fill-fuchsia-500",
+    bgClass: "bg-fuchsia-500",
+    textClass: "text-fuchsia-600 dark:text-fuchsia-400",
+    glow: "rgba(217, 70, 239, 0.28)",
+    radarHalo: "fill-fuchsia-500/20 stroke-fuchsia-400",
+    badgeBorder: "border-fuchsia-500",
   },
+  // 9. FL-05: Violet
   "FL-05": {
+    name: "Violet",
+    hex: "#8b5cf6",
+    strokeClass: "stroke-purple-500 dark:stroke-purple-400",
+    fillClass: "fill-purple-500",
+    bgClass: "bg-purple-500",
+    textClass: "text-purple-600 dark:text-purple-400",
+    glow: "rgba(139, 92, 246, 0.28)",
+    radarHalo: "fill-purple-500/20 stroke-purple-400",
+    badgeBorder: "border-purple-500",
+  },
+  // 10. FB-05: Indigo
+  "FB-05": {
     name: "Indigo",
     hex: "#6366f1",
     strokeClass: "stroke-indigo-500 dark:stroke-indigo-400",
@@ -282,149 +291,6 @@ export const ROBOT_COLOR_THEMES = {
     glow: "rgba(99, 102, 241, 0.28)",
     radarHalo: "fill-indigo-500/20 stroke-indigo-400",
     badgeBorder: "border-indigo-500",
-  },
-  "FL-06": {
-    name: "Violet",
-    hex: "#7c3aed",
-    strokeClass: "stroke-violet-500 dark:stroke-violet-400",
-    fillClass: "fill-violet-500",
-    bgClass: "bg-violet-500",
-    textClass: "text-violet-600 dark:text-violet-400",
-    glow: "rgba(124, 58, 237, 0.28)",
-    radarHalo: "fill-violet-500/20 stroke-violet-400",
-    badgeBorder: "border-violet-500",
-  },
-  "FL-07": {
-    name: "Amber Dark",
-    hex: "#d97706",
-    strokeClass: "stroke-amber-600 dark:stroke-amber-400",
-    fillClass: "fill-amber-600",
-    bgClass: "bg-amber-600",
-    textClass: "text-amber-600 dark:text-amber-400",
-    glow: "rgba(217, 119, 6, 0.28)",
-    radarHalo: "fill-amber-600/20 stroke-amber-400",
-    badgeBorder: "border-amber-600",
-  },
-  "FL-08": {
-    name: "Crimson",
-    hex: "#e11d48",
-    strokeClass: "stroke-rose-600 dark:stroke-rose-400",
-    fillClass: "fill-rose-600",
-    bgClass: "bg-rose-600",
-    textClass: "text-rose-600 dark:text-rose-400",
-    glow: "rgba(225, 29, 72, 0.28)",
-    radarHalo: "fill-rose-600/20 stroke-rose-400",
-    badgeBorder: "border-rose-600",
-  },
-  "FL-09": {
-    name: "Sky",
-    hex: "#0284c7",
-    strokeClass: "stroke-sky-500 dark:stroke-sky-400",
-    fillClass: "fill-sky-500",
-    bgClass: "bg-sky-500",
-    textClass: "text-sky-600 dark:text-sky-400",
-    glow: "rgba(2, 132, 199, 0.28)",
-    radarHalo: "fill-sky-500/20 stroke-sky-400",
-    badgeBorder: "border-sky-500",
-  },
-  "FB-03": {
-    name: "Cyan Deep",
-    hex: "#0891b2",
-    strokeClass: "stroke-cyan-600 dark:stroke-cyan-400",
-    fillClass: "fill-cyan-600",
-    bgClass: "bg-cyan-600",
-    textClass: "text-cyan-600 dark:text-cyan-400",
-    glow: "rgba(8, 145, 178, 0.28)",
-    radarHalo: "fill-cyan-600/20 stroke-cyan-400",
-    badgeBorder: "border-cyan-600",
-  },
-  "FB-04": {
-    name: "Fuchsia",
-    hex: "#c026d3",
-    strokeClass: "stroke-fuchsia-500 dark:stroke-fuchsia-400",
-    fillClass: "fill-fuchsia-500",
-    bgClass: "bg-fuchsia-500",
-    textClass: "text-fuchsia-600 dark:text-fuchsia-400",
-    glow: "rgba(192, 38, 211, 0.28)",
-    radarHalo: "fill-fuchsia-500/20 stroke-fuchsia-400",
-    badgeBorder: "border-fuchsia-500",
-  },
-  "FB-05": {
-    name: "Ice Blue",
-    hex: "#38bdf8",
-    strokeClass: "stroke-sky-400 dark:stroke-sky-300",
-    fillClass: "fill-sky-400",
-    bgClass: "bg-sky-400",
-    textClass: "text-sky-500 dark:text-sky-300",
-    glow: "rgba(56, 189, 248, 0.28)",
-    radarHalo: "fill-sky-400/20 stroke-sky-300",
-    badgeBorder: "border-sky-400",
-  },
-  "TUG-02": {
-    name: "Yellow Warm",
-    hex: "#ca8a04",
-    strokeClass: "stroke-yellow-600 dark:stroke-yellow-400",
-    fillClass: "fill-yellow-600",
-    bgClass: "bg-yellow-600",
-    textClass: "text-yellow-600 dark:text-yellow-400",
-    glow: "rgba(202, 138, 4, 0.28)",
-    radarHalo: "fill-yellow-600/20 stroke-yellow-400",
-    badgeBorder: "border-yellow-600",
-  },
-  "TUG-03": {
-    name: "Orange Deep",
-    hex: "#ea580c",
-    strokeClass: "stroke-orange-600 dark:stroke-orange-400",
-    fillClass: "fill-orange-600",
-    bgClass: "bg-orange-600",
-    textClass: "text-orange-600 dark:text-orange-400",
-    glow: "rgba(234, 88, 12, 0.28)",
-    radarHalo: "fill-orange-600/20 stroke-orange-400",
-    badgeBorder: "border-orange-600",
-  },
-  "AMR-03": {
-    name: "Mint",
-    hex: "#059669",
-    strokeClass: "stroke-emerald-600 dark:stroke-emerald-400",
-    fillClass: "fill-emerald-600",
-    bgClass: "bg-emerald-600",
-    textClass: "text-emerald-600 dark:text-emerald-400",
-    glow: "rgba(5, 150, 105, 0.28)",
-    radarHalo: "fill-emerald-600/20 stroke-emerald-400",
-    badgeBorder: "border-emerald-600",
-  },
-  "AMR-04": {
-    name: "Blue Purple",
-    hex: "#4f46e5",
-    strokeClass: "stroke-indigo-600 dark:stroke-indigo-400",
-    fillClass: "fill-indigo-600",
-    bgClass: "bg-indigo-600",
-    textClass: "text-indigo-600 dark:text-indigo-400",
-    glow: "rgba(79, 70, 229, 0.28)",
-    radarHalo: "fill-indigo-600/20 stroke-indigo-400",
-    badgeBorder: "border-indigo-600",
-  },
-  "AMR-05": {
-    name: "Pink Neon",
-    hex: "#db2777",
-    strokeClass: "stroke-pink-600 dark:stroke-pink-400",
-    fillClass: "fill-pink-600",
-    bgClass: "bg-pink-600",
-    textClass: "text-pink-600 dark:text-pink-400",
-    glow: "rgba(219, 39, 119, 0.28)",
-    radarHalo: "fill-pink-600/20 stroke-pink-400",
-    badgeBorder: "border-pink-600",
-  },
-  "AMR-06": {
-    name: "Teal Vibrant",
-    hex: "#0d9488",
-    strokeClass: "stroke-teal-600 dark:stroke-teal-400",
-    fillClass: "fill-teal-600",
-    bgClass: "bg-teal-600",
-    textClass: "text-teal-600 dark:text-teal-400",
-    glow: "rgba(13, 148, 136, 0.28)",
-    radarHalo: "fill-teal-600/20 stroke-teal-400",
-    badgeBorder: "border-teal-600",
   },
 };
 

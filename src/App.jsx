@@ -15,7 +15,6 @@ import RobotDetailView from "./views/RobotDetailView";
 import MaintenanceView from "./views/MaintenanceView";
 import AlertsView from "./views/AlertsView";
 import FacilitiesView from "./views/FacilitiesView";
-import AnalyticsView from "./views/AnalyticsView";
 import UsersView from "./views/UsersView";
 import SettingsView from "./views/SettingsView";
 
@@ -36,7 +35,6 @@ function AppContent() {
       {currentView === VIEWS.MAINTENANCE && <MaintenanceView />}
       {currentView === VIEWS.ALERTS && <AlertsView />}
       {currentView === VIEWS.FACILITIES && <FacilitiesView />}
-      {currentView === VIEWS.ANALYTICS && <AnalyticsView />}
       {currentView === VIEWS.USERS && <UsersView />}
       {currentView === VIEWS.SETTINGS && <SettingsView />}
     </AppLayout>
