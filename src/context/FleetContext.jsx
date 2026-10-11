@@ -132,6 +132,37 @@ export function FleetProvider({ children }) {
   useEffect(() => { saveStorage("rfms_alerts", alerts); }, [alerts]);
   useEffect(() => { saveStorage("rfms_blackbox_logs", blackboxLogs); }, [blackboxLogs]);
 
+  // Select building and auto-switch to its designated first floor
+  const selectBuilding = useCallback((bldgId) => {
+    setActiveBuildingId(bldgId);
+    const bldgFloors = floors.filter((f) => f.buildingId === bldgId);
+    if (bldgFloors.length > 0) {
+      const hasActive = bldgFloors.some((f) => f.id === activeFloorId);
+      if (!hasActive) {
+        setActiveFloorId(bldgFloors[0].id);
+      }
+    } else {
+      setActiveFloorId("");
+    }
+  }, [floors, activeFloorId]);
+
+  // Synchronize activeFloorId whenever activeBuildingId or floors change
+  useEffect(() => {
+    if (!activeBuildingId) {
+      if (buildings.length > 0) {
+        setActiveBuildingId(buildings[0].id);
+      }
+      return;
+    }
+    const bldgFloors = floors.filter((f) => f.buildingId === activeBuildingId);
+    if (bldgFloors.length > 0) {
+      const isFloorInBldg = bldgFloors.some((f) => f.id === activeFloorId);
+      if (!isFloorInBldg) {
+        setActiveFloorId(bldgFloors[0].id);
+      }
+    }
+  }, [activeBuildingId, floors, activeFloorId, buildings]);
+
   // Sync active floor's designated path when active floor changes
   useEffect(() => {
     const floorPath = DEFAULT_FLOOR_PATHS[activeFloorId] || DEFAULT_FLOOR_PATHS["floor-g"] || [];
@@ -139,8 +170,14 @@ export function FleetProvider({ children }) {
     setCurrentWaypointIdx(0);
   }, [activeFloorId]);
 
-  // Active Floor object
+  // Active Floor object: always synchronized to activeBuildingId
   const activeFloor = useMemo(() => {
+    const bldgFloors = floors.filter((f) => f.buildingId === activeBuildingId);
+    if (bldgFloors.length > 0) {
+      const found = bldgFloors.find((f) => f.id === activeFloorId);
+      if (found) return found;
+      return bldgFloors[0];
+    }
     return (
       floors.find((f) => f.id === activeFloorId) ||
       floors[0] || {
@@ -152,7 +189,7 @@ export function FleetProvider({ children }) {
         restrictedZones: [],
       }
     );
-  }, [floors, activeFloorId]);
+  }, [floors, activeFloorId, activeBuildingId]);
 
   // Combined AGVs array (dynamic: includes forklift if active, plus all fleet AGVs)
   const agvs = useMemo(() => {
@@ -288,11 +325,21 @@ export function FleetProvider({ children }) {
     setBuildings((prev) =>
       prev.map((b) => (b.id === id ? { ...b, ...updates } : b))
     );
-  }, []);
+    addBlackboxLog("ACTION", `Updated facility details for #${id}`);
+  }, [addBlackboxLog]);
 
   const deleteBuilding = useCallback((id) => {
-    setBuildings((prev) => prev.filter((b) => b.id !== id));
-  }, []);
+    setBuildings((prev) => {
+      const remaining = prev.filter((b) => b.id !== id);
+      if (activeBuildingId === id) {
+        setActiveBuildingId(remaining[0]?.id || "");
+      }
+      return remaining;
+    });
+    // Cascade delete floors belonging to this building
+    setFloors((prev) => prev.filter((f) => f.buildingId !== id));
+    addBlackboxLog("WARN", `Deleted building #${id} and associated floor levels`);
+  }, [activeBuildingId, addBlackboxLog]);
 
   const addFloor = useCallback((floorData) => {
     setFloors((prev) => [...prev, floorData]);
@@ -303,7 +350,21 @@ export function FleetProvider({ children }) {
     setFloors((prev) =>
       prev.map((f) => (f.id === floorId ? { ...f, ...updates } : f))
     );
-  }, []);
+    addBlackboxLog("ACTION", `Updated floor specs for #${floorId}`);
+  }, [addBlackboxLog]);
+
+  const deleteFloor = useCallback((floorId) => {
+    setFloors((prev) => {
+      const remaining = prev.filter((f) => f.id !== floorId);
+      if (activeFloorId === floorId) {
+        const currentF = prev.find((f) => f.id === floorId);
+        const bldgFloors = remaining.filter((f) => f.buildingId === currentF?.buildingId);
+        setActiveFloorId(bldgFloors[0]?.id || remaining[0]?.id || "");
+      }
+      return remaining;
+    });
+    addBlackboxLog("WARN", `Deleted floor level #${floorId}`);
+  }, [activeFloorId, addBlackboxLog]);
 
   const uploadFloorMap = useCallback((floorId, imageBase64) => {
     setFloors((prev) =>
@@ -1359,6 +1420,7 @@ export function FleetProvider({ children }) {
     floors,
     activeBuildingId,
     setActiveBuildingId,
+    selectBuilding,
     activeFloorId,
     setActiveFloorId,
     activeFloor,
@@ -1367,6 +1429,7 @@ export function FleetProvider({ children }) {
     deleteBuilding,
     addFloor,
     updateFloor,
+    deleteFloor,
     uploadFloorMap,
     clearFloorMap,
     addStationToFloor,

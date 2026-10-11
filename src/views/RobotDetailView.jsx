@@ -28,29 +28,32 @@ export default function RobotDetailView({
   const agvs = propAgvs ?? fleetCtx?.agvs ?? [];
   const agvId = propAgvId ?? navCtx?.selectedAgvId ?? "FL-01";
   const onBack = propOnBack ?? (() => navCtx?.navigateTo(VIEWS.ROBOTS));
-  const onNavigateMap = propOnNavigateMap ?? (() => navCtx?.navigateTo(VIEWS.MAP));
+  const onNavigateMap =
+    propOnNavigateMap ?? (() => navCtx?.navigateTo(VIEWS.MAP));
 
-  const rawAgv =
-    agvs.find((a) => a.id === agvId) ||
-    agvs[0] ||
-    null;
+  const rawAgv = agvs.find((a) => a.id === agvId) || agvs[0] || null;
 
   // Dynamic live store instance for whichever AGV is currently active
   const agv =
-    rawAgv && fleetCtx?.forklift && (rawAgv.id === "FL-01" || rawAgv.id === fleetCtx.forklift.id)
+    rawAgv &&
+    fleetCtx?.forklift &&
+    (rawAgv.id === "FL-01" || rawAgv.id === fleetCtx.forklift.id)
       ? fleetCtx.forklift
       : rawAgv;
 
-  const [activeTab, setActiveTab] = useState("camera");
+  const [activeTab, setActiveTab] = useState("logs");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   if (!agv) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
         <Bot className="w-12 h-12 text-slate-400 mb-3" />
-        <h2 className="text-base font-bold text-slate-800 dark:text-slate-200">Robot Not Found</h2>
+        <h2 className="text-base font-bold text-slate-800 dark:text-slate-200">
+          Robot Not Found
+        </h2>
         <p className="text-xs text-slate-500 max-w-sm mt-1 mb-4">
-          This AGV has been de-registered or is no longer present in the fleet roster.
+          This AGV has been de-registered or is no longer present in the fleet
+          roster.
         </p>
         <button
           onClick={onBack}
@@ -193,7 +196,8 @@ export default function RobotDetailView({
                 Assigned Floor
               </span>
               <span className="font-bold text-slate-900 dark:text-white truncate max-w-[140px] text-right">
-                {fleetCtx?.floors?.find((f) => f.id === agv.floorId)?.name || "Ground Floor"}
+                {fleetCtx?.floors?.find((f) => f.id === agv.floorId)?.name ||
+                  "Ground Floor"}
               </span>
             </div>
 
@@ -292,6 +296,16 @@ export default function RobotDetailView({
           {/* Tab Navigation */}
           <div className="flex items-center gap-6 border-b border-slate-100 dark:border-slate-800 text-xs font-semibold pb-3">
             <button
+              onClick={() => setActiveTab("logs")}
+              className={`transition-colors ${
+                activeTab === "logs"
+                  ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 pb-3 -mb-3"
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
+              }`}
+            >
+              Logs
+            </button>
+            <button
               onClick={() => setActiveTab("camera")}
               className={`flex items-center gap-1.5 transition-colors ${
                 activeTab === "camera"
@@ -311,16 +325,6 @@ export default function RobotDetailView({
               }`}
             >
               Telemetry
-            </button>
-            <button
-              onClick={() => setActiveTab("logs")}
-              className={`transition-colors ${
-                activeTab === "logs"
-                  ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 pb-3 -mb-3"
-                  : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
-              }`}
-            >
-              Logs
             </button>
           </div>
 
@@ -405,8 +409,6 @@ export default function RobotDetailView({
               </div>
             </div>
           )}
-
-
         </div>
 
         {/* Right: Current Position Mini-Map Widget */}

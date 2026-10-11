@@ -3,6 +3,8 @@ import { useFleet } from "../context/FleetContext";
 import { useNavigation } from "../context/NavigationContext";
 import { VIEWS } from "../constants";
 import { getSvgCoordinates } from "../utils/svg";
+import { optimizeBlueprintImage } from "../utils/imageOptimizer";
+import { getZoneConfig } from "../utils/zoneConfig";
 
 import FacilityHeader from "../components/facilities/FacilityHeader";
 import FacilityCanvas from "../components/facilities/FacilityCanvas";
@@ -15,18 +17,22 @@ export default function FacilitiesView() {
     floors,
     activeBuildingId,
     setActiveBuildingId,
+    selectBuilding,
     activeFloorId,
     setActiveFloorId,
     activeFloor,
     addBuilding,
+    updateBuilding,
+    deleteBuilding,
     addFloor,
+    updateFloor,
+    deleteFloor,
     uploadFloorMap,
     clearFloorMap,
     addStationToFloor,
     removeStationFromFloor,
     addRestrictedZoneToFloor,
     removeRestrictedZoneFromFloor,
-    updateFloor,
   } = useFleet();
 
   const navCtx = useNavigation();
@@ -55,6 +61,9 @@ export default function FacilitiesView() {
   const [showElementsDrawer, setShowElementsDrawer] = useState(false);
   const [draggingStationId, setDraggingStationId] = useState(null);
   const dragStartCoordsRef = useRef({ x: 0, y: 0 });
+  const [draggingZoneId, setDraggingZoneId] = useState(null);
+  const [resizingZoneId, setResizingZoneId] = useState(null);
+  const zoneDragOffsetRef = useRef({ offsetX: 0, offsetY: 0, startW: 0, startH: 0, startX: 0, startY: 0 });
 
   // Drawing Zone State (MouseDown -> Drag -> MouseUp)
   const [isDrawingZone, setIsDrawingZone] = useState(false);
@@ -68,6 +77,18 @@ export default function FacilitiesView() {
   const [manualStnName, setManualStnName] = useState("");
   const [manualStnType, setManualStnType] = useState("dock");
 
+  // Blueprint Hidden Input Reference
+  const blueprintInputRef = useRef(null);
+
+  // New Area Modal State
+  const [showNewAreaModal, setShowNewAreaModal] = useState(false);
+  const [newAreaName, setNewAreaName] = useState("");
+  const [newAreaType, setNewAreaType] = useState("receiving");
+  const [newAreaWidthMeter, setNewAreaWidthMeter] = useState(25);
+  const [newAreaLengthMeter, setNewAreaLengthMeter] = useState(15);
+  const [newAreaXMeter, setNewAreaXMeter] = useState(15);
+  const [newAreaYMeter, setNewAreaYMeter] = useState(15);
+
   // Floor Dimensions & Specs Modal
   const [showFloorSpecsModal, setShowFloorSpecsModal] = useState(false);
 
@@ -80,6 +101,22 @@ export default function FacilitiesView() {
   const [newFloorName, setNewFloorName] = useState("");
   const [newFloorWidth, setNewFloorWidth] = useState(100);
   const [newFloorLength, setNewFloorLength] = useState(65);
+
+  // Modals for Building & Floor Edit and Delete
+  const [showEditBuildingModal, setShowEditBuildingModal] = useState(false);
+  const [editBldgName, setEditBldgName] = useState("");
+  const [editBldgCode, setEditBldgCode] = useState("");
+  const [editBldgAddress, setEditBldgAddress] = useState("");
+  const [editBldgLevels, setEditBldgLevels] = useState(1);
+  const [showDeleteBuildingModal, setShowDeleteBuildingModal] = useState(false);
+
+  const [showEditFloorModal, setShowEditFloorModal] = useState(false);
+  const [editFloorName, setEditFloorName] = useState("");
+  const [editFloorWidth, setEditFloorWidth] = useState(100);
+  const [editFloorLength, setEditFloorLength] = useState(65);
+  const [editFloorLevel, setEditFloorLevel] = useState(0);
+  const [editFloorCapacity, setEditFloorCapacity] = useState(6);
+  const [showDeleteFloorModal, setShowDeleteFloorModal] = useState(false);
 
   const selectedBuilding =
     buildings.find((b) => b.id === activeBuildingId) || buildings[0];
@@ -170,9 +207,33 @@ export default function FacilitiesView() {
     setSelectedItem(null);
   };
 
+  // Clear in-progress drawing or panning state whenever active tool changes
+  useEffect(() => {
+    setIsDrawingZone(false);
+    setDrawZoneStart(null);
+    setCurrentDrawZone(null);
+    setIsPanning(false);
+  }, [activeTool]);
+
   // Canvas Mouse Down
   const handleCanvasMouseDown = (e) => {
     if (e.button !== 0) return;
+
+    // Check if the click is actually on or inside the SVG canvas element
+    const isInsideSvg = svgRef.current && (svgRef.current.contains(e.target) || e.target === svgRef.current);
+    if (!isInsideSvg) {
+      if (activeTool === "pan") {
+        setIsPanning(true);
+        panStartRef.current = {
+          x: e.clientX,
+          y: e.clientY,
+          panX: pan.x,
+          panY: pan.y,
+          hasDragged: false,
+        };
+      }
+      return;
+    }
 
     const coords = getSvgCoordinates(svgRef.current, e.clientX, e.clientY, {
       minX: 10,
@@ -219,7 +280,7 @@ export default function FacilitiesView() {
     }
   };
 
-  // Canvas Mouse Move
+  // Canvas Mouse Move (Coordinate Tracking)
   const handleCanvasMouseMove = (e) => {
     const coords = getSvgCoordinates(svgRef.current, e.clientX, e.clientY, {
       minX: 10,
@@ -235,8 +296,13 @@ export default function FacilitiesView() {
         meterY: pxToMeters(coords.y),
       });
     }
+  };
 
-    if (isPanning && activeTool === "pan") {
+  // Global Panning Listeners
+  useEffect(() => {
+    if (!isPanning) return;
+
+    const handleWindowMouseMove = (e) => {
       const dx = e.clientX - panStartRef.current.x;
       const dy = e.clientY - panStartRef.current.y;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
@@ -246,47 +312,92 @@ export default function FacilitiesView() {
         x: panStartRef.current.panX + dx,
         y: panStartRef.current.panY + dy,
       });
-    } else if (isDrawingZone && drawZoneStart && coords) {
-      const minX = Math.min(drawZoneStart.x, coords.x);
-      const minY = Math.min(drawZoneStart.y, coords.y);
-      const width = Math.abs(coords.x - drawZoneStart.x);
-      const height = Math.abs(coords.y - drawZoneStart.y);
-      setCurrentDrawZone({ x: minX, y: minY, w: width, h: height });
-    }
-  };
+    };
 
-  // Canvas Mouse Up
-  const handleCanvasMouseUp = () => {
-    if (isPanning) {
+    const handleWindowMouseUp = () => {
       setIsPanning(false);
-    }
+    };
 
-    if (isDrawingZone && currentDrawZone) {
+    window.addEventListener("mousemove", handleWindowMouseMove);
+    window.addEventListener("mouseup", handleWindowMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleWindowMouseMove);
+      window.removeEventListener("mouseup", handleWindowMouseUp);
+    };
+  }, [isPanning]);
+
+  // Global Area / Zone Drawing Listeners (100% Reliable Drag & Click)
+  useEffect(() => {
+    if (!isDrawingZone) return;
+
+    const handleWindowMouseMove = (e) => {
+      const coords = getSvgCoordinates(svgRef.current, e.clientX, e.clientY, {
+        minX: 10,
+        maxX: 990,
+        minY: 10,
+        maxY: 640,
+      });
+      if (coords && drawZoneStart) {
+        const minX = Math.min(drawZoneStart.x, coords.x);
+        const minY = Math.min(drawZoneStart.y, coords.y);
+        const width = Math.abs(coords.x - drawZoneStart.x);
+        const height = Math.abs(coords.y - drawZoneStart.y);
+        setCurrentDrawZone({ x: minX, y: minY, w: width, h: height });
+      }
+    };
+
+    const handleWindowMouseUp = (e) => {
       setIsDrawingZone(false);
-      if (currentDrawZone.w > 15 && currentDrawZone.h > 15) {
-        const zoneTitles = {
-          "no-go": "No-Go Safety Keep-Out",
-          slow: "Slow Zone (0.4m/s)",
-          staging: "Staging Buffer",
-        };
-        const count = (currentFloor.restrictedZones || []).length + 1;
+      if (activeTool !== "draw-zone" || !drawZoneStart) {
+        setDrawZoneStart(null);
+        setCurrentDrawZone(null);
+        return;
+      }
+
+      const config = getZoneConfig(zoneTypeToAdd);
+      const count = (currentFloor.restrictedZones || []).length + 1;
+      let finalBox = null;
+
+      if (currentDrawZone && currentDrawZone.w > 15 && currentDrawZone.h > 15) {
+        finalBox = currentDrawZone;
+      } else {
+        // Only place default area if click released on SVG canvas
+        const isTargetSvg = svgRef.current && (svgRef.current.contains(e.target) || e.target === svgRef.current);
+        if (isTargetSvg) {
+          const defaultW = 220; // 22 meters
+          const defaultH = 150; // 15 meters
+          const x = Math.max(20, Math.min(980 - defaultW, drawZoneStart.x - defaultW / 2));
+          const y = Math.max(20, Math.min(630 - defaultH, drawZoneStart.y - defaultH / 2));
+          finalBox = { x, y, w: defaultW, h: defaultH };
+        }
+      }
+
+      if (finalBox) {
         const newZone = {
           id: `zone-${Date.now()}`,
-          name: `${zoneTitles[zoneTypeToAdd] || "Zone"} ${count}`,
+          name: `${config.name} ${count}`,
           type: zoneTypeToAdd,
-          x: currentDrawZone.x,
-          y: currentDrawZone.y,
-          w: currentDrawZone.w,
-          h: currentDrawZone.h,
+          x: Math.round(finalBox.x),
+          y: Math.round(finalBox.y),
+          w: Math.round(finalBox.w),
+          h: Math.round(finalBox.h),
           maxSpeed: zoneTypeToAdd === "slow" ? 0.4 : 0.0,
         };
         addRestrictedZoneToFloor(currentFloor.id, newZone);
         setSelectedItem({ type: "zone", id: newZone.id });
       }
+
       setDrawZoneStart(null);
       setCurrentDrawZone(null);
-    }
-  };
+    };
+
+    window.addEventListener("mousemove", handleWindowMouseMove);
+    window.addEventListener("mouseup", handleWindowMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleWindowMouseMove);
+      window.removeEventListener("mouseup", handleWindowMouseUp);
+    };
+  }, [isDrawingZone, drawZoneStart, currentDrawZone, activeTool, zoneTypeToAdd, currentFloor, addRestrictedZoneToFloor]);
 
   // Dragging existing station
   const handleStationMouseDown = (e, stnId) => {
@@ -343,24 +454,197 @@ export default function FacilitiesView() {
     setSelectedItem({ type: "zone", id: zoneId });
   };
 
-  // Blueprint Image Upload
-  const handleImageUpload = (e) => {
+  // Handle Zone MouseDown (start moving zone)
+  const handleZoneMouseDown = (e, zoneId) => {
+    e.stopPropagation();
+    if (activeTool === "delete") {
+      removeRestrictedZoneFromFloor(currentFloor.id, zoneId);
+      if (selectedItem?.id === zoneId) setSelectedItem(null);
+      return;
+    }
+    if (activeTool === "draw-zone") return;
+
+    const coords = getSvgCoordinates(svgRef.current, e.clientX, e.clientY, {
+      minX: 10,
+      maxX: 990,
+      minY: 10,
+      maxY: 640,
+    });
+    const zone = (currentFloor.restrictedZones || []).find((z) => z.id === zoneId);
+    if (!zone || !coords) return;
+
+    setSelectedItem({ type: "zone", id: zoneId });
+    setDraggingZoneId(zoneId);
+    zoneDragOffsetRef.current = {
+      offsetX: coords.x - zone.x,
+      offsetY: coords.y - zone.y,
+      startW: zone.w,
+      startH: zone.h,
+      startX: zone.x,
+      startY: zone.y,
+    };
+  };
+
+  // Handle Zone Corner Resize MouseDown
+  const handleZoneResizeMouseDown = (e, zoneId) => {
+    e.stopPropagation();
+    if (activeTool === "delete" || activeTool === "draw-zone") return;
+
+    const coords = getSvgCoordinates(svgRef.current, e.clientX, e.clientY, {
+      minX: 10,
+      maxX: 990,
+      minY: 10,
+      maxY: 640,
+    });
+    const zone = (currentFloor.restrictedZones || []).find((z) => z.id === zoneId);
+    if (!zone || !coords) return;
+
+    setSelectedItem({ type: "zone", id: zoneId });
+    setResizingZoneId(zoneId);
+    zoneDragOffsetRef.current = {
+      offsetX: coords.x,
+      offsetY: coords.y,
+      startW: zone.w,
+      startH: zone.h,
+      startX: zone.x,
+      startY: zone.y,
+    };
+  };
+
+  // Global Drag listeners for Moving a Zone
+  useEffect(() => {
+    if (!draggingZoneId) return;
+
+    const handleZoneDragMove = (e) => {
+      const coords = getSvgCoordinates(svgRef.current, e.clientX, e.clientY, {
+        minX: 10,
+        maxX: 990,
+        minY: 10,
+        maxY: 640,
+      });
+      if (!coords) return;
+
+      const zone = (currentFloor.restrictedZones || []).find((z) => z.id === draggingZoneId);
+      if (!zone) return;
+
+      const newX = coords.x - zoneDragOffsetRef.current.offsetX;
+      const newY = coords.y - zoneDragOffsetRef.current.offsetY;
+      const clampedX = Math.max(10, Math.min(990 - zone.w, newX));
+      const clampedY = Math.max(10, Math.min(640 - zone.h, newY));
+
+      const updatedZones = (currentFloor.restrictedZones || []).map((z) =>
+        z.id === draggingZoneId
+          ? { ...z, x: Math.round(clampedX), y: Math.round(clampedY) }
+          : z
+      );
+      updateFloor(currentFloor.id, { restrictedZones: updatedZones });
+    };
+
+    const handleZoneDragEnd = () => {
+      setDraggingZoneId(null);
+    };
+
+    window.addEventListener("mousemove", handleZoneDragMove);
+    window.addEventListener("mouseup", handleZoneDragEnd);
+    return () => {
+      window.removeEventListener("mousemove", handleZoneDragMove);
+      window.removeEventListener("mouseup", handleZoneDragEnd);
+    };
+  }, [draggingZoneId, currentFloor, updateFloor]);
+
+  // Global Drag listeners for Resizing a Zone
+  useEffect(() => {
+    if (!resizingZoneId) return;
+
+    const handleZoneResizeMove = (e) => {
+      const coords = getSvgCoordinates(svgRef.current, e.clientX, e.clientY, {
+        minX: 10,
+        maxX: 990,
+        minY: 10,
+        maxY: 640,
+      });
+      if (!coords) return;
+
+      const { startX, startY } = zoneDragOffsetRef.current;
+      const newW = Math.max(30, Math.min(990 - startX, coords.x - startX));
+      const newH = Math.max(20, Math.min(640 - startY, coords.y - startY));
+
+      const updatedZones = (currentFloor.restrictedZones || []).map((z) =>
+        z.id === resizingZoneId
+          ? { ...z, w: Math.round(newW), h: Math.round(newH) }
+          : z
+      );
+      updateFloor(currentFloor.id, { restrictedZones: updatedZones });
+    };
+
+    const handleZoneResizeEnd = () => {
+      setResizingZoneId(null);
+    };
+
+    window.addEventListener("mousemove", handleZoneResizeMove);
+    window.addEventListener("mouseup", handleZoneResizeEnd);
+    return () => {
+      window.removeEventListener("mousemove", handleZoneResizeMove);
+      window.removeEventListener("mouseup", handleZoneResizeEnd);
+    };
+  }, [resizingZoneId, currentFloor, updateFloor]);
+
+  // Blueprint Image Upload with Automatic Optimization
+  const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result;
-      if (base64) {
-        uploadFloorMap(currentFloor.id, base64);
+    try {
+      const optimizedBase64 = await optimizeBlueprintImage(file);
+      if (optimizedBase64) {
+        uploadFloorMap(currentFloor.id, optimizedBase64);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Failed to load blueprint:", err);
+    } finally {
+      if (e.target) e.target.value = "";
+    }
   };
 
   // Blueprint Image Clear Action
   const handleClearBlueprintImage = () => {
     clearFloorMap(currentFloor.id);
+  };
+
+  // Create Area Modal Handlers
+  const handleOpenNewAreaModal = () => {
+    const config = getZoneConfig(zoneTypeToAdd || "receiving");
+    const count = (currentFloor.restrictedZones || []).length + 1;
+    setNewAreaName(`${config.name} ${count}`);
+    setNewAreaType(zoneTypeToAdd || "receiving");
+    setNewAreaWidthMeter(25);
+    setNewAreaLengthMeter(15);
+    setNewAreaXMeter(15);
+    setNewAreaYMeter(15);
+    setShowNewAreaModal(true);
+  };
+
+  const handleCreateAreaSubmit = (e) => {
+    e.preventDefault();
+    if (!newAreaName.trim()) return;
+    const w = metersToPx(Number(newAreaWidthMeter) || 25);
+    const h = metersToPx(Number(newAreaLengthMeter) || 15);
+    const x = metersToPx(Number(newAreaXMeter) || 15);
+    const y = metersToPx(Number(newAreaYMeter) || 15);
+
+    const newZone = {
+      id: `zone-${Date.now()}`,
+      name: newAreaName.trim(),
+      type: newAreaType,
+      x: Math.max(10, Math.min(990 - w, x)),
+      y: Math.max(10, Math.min(640 - h, y)),
+      w,
+      h,
+      maxSpeed: newAreaType === "slow" ? 0.4 : 0.0,
+    };
+    addRestrictedZoneToFloor(currentFloor.id, newZone);
+    setSelectedItem({ type: "zone", id: newZone.id });
+    setShowNewAreaModal(false);
   };
 
   // Manual Coordinates Place Button
@@ -460,25 +744,103 @@ export default function FacilitiesView() {
     setShowNewFloorModal(false);
   };
 
+  // Edit Building Handlers
+  const handleOpenEditBuilding = () => {
+    if (selectedBuilding) {
+      setEditBldgName(selectedBuilding.name || "");
+      setEditBldgCode(selectedBuilding.facilityCode || "");
+      setEditBldgAddress(selectedBuilding.address || "");
+      setEditBldgLevels(selectedBuilding.totalLevels || 1);
+      setShowEditBuildingModal(true);
+    }
+  };
+
+  const handleUpdateBuildingSubmit = (e) => {
+    e.preventDefault();
+    if (!selectedBuilding || !editBldgName.trim()) return;
+    updateBuilding(selectedBuilding.id, {
+      name: editBldgName.trim(),
+      facilityCode: editBldgCode.trim(),
+      address: editBldgAddress.trim(),
+      totalLevels: Number(editBldgLevels) || 1,
+    });
+    setShowEditBuildingModal(false);
+  };
+
+  const handleDeleteBuildingSubmit = () => {
+    if (!selectedBuilding) return;
+    deleteBuilding(selectedBuilding.id);
+    setShowDeleteBuildingModal(false);
+  };
+
+  // Edit Floor Handlers
+  const handleOpenEditFloor = () => {
+    if (currentFloor) {
+      setEditFloorName(currentFloor.name || "");
+      setEditFloorWidth(currentFloor.widthMeters || 100);
+      setEditFloorLength(currentFloor.lengthMeters || 65);
+      setEditFloorLevel(currentFloor.levelNumber || 0);
+      setEditFloorCapacity(currentFloor.maxCapacity || 6);
+      setShowEditFloorModal(true);
+    }
+  };
+
+  const handleUpdateFloorSubmit = (e) => {
+    e.preventDefault();
+    if (!currentFloor || !editFloorName.trim()) return;
+    const w = Number(editFloorWidth) || 100;
+    const l = Number(editFloorLength) || 65;
+    updateFloor(currentFloor.id, {
+      name: editFloorName.trim(),
+      widthMeters: w,
+      lengthMeters: l,
+      areaSqM: w * l,
+      levelNumber: Number(editFloorLevel) || 0,
+      maxCapacity: Number(editFloorCapacity) || 6,
+    });
+    setShowEditFloorModal(false);
+  };
+
+  const handleDeleteFloorSubmit = () => {
+    if (!currentFloor) return;
+    deleteFloor(currentFloor.id);
+    setShowDeleteFloorModal(false);
+  };
+
   const isDrawerOpen = Boolean(selectedItem || showElementsDrawer);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 select-none overflow-hidden relative transition-colors duration-150">
+      {/* Hidden File Input for Blueprint Uploading */}
+      <input
+        ref={blueprintInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp"
+        className="hidden"
+        onChange={handleImageUpload}
+      />
+
       {/* 1. Header Bar */}
       <FacilityHeader
         selectedBuilding={selectedBuilding}
         buildings={buildings}
         activeBuildingId={activeBuildingId}
         setActiveBuildingId={setActiveBuildingId}
+        onSelectBuilding={(id) => selectBuilding ? selectBuilding(id) : setActiveBuildingId(id)}
         setShowNewBuildingModal={setShowNewBuildingModal}
+        setShowEditBuildingModal={handleOpenEditBuilding}
+        setShowDeleteBuildingModal={() => setShowDeleteBuildingModal(true)}
         currentFloor={currentFloor}
         floors={floors}
         activeFloorId={activeFloorId}
         setActiveFloorId={setActiveFloorId}
         setSelectedItem={setSelectedItem}
         setShowNewFloorModal={setShowNewFloorModal}
+        setShowEditFloorModal={handleOpenEditFloor}
+        setShowDeleteFloorModal={() => setShowDeleteFloorModal(true)}
         setShowFloorSpecsModal={setShowFloorSpecsModal}
         handleImageUpload={handleImageUpload}
+        onTriggerUploadBlueprint={() => blueprintInputRef.current?.click()}
         blueprintOpacity={blueprintOpacity}
         setBlueprintOpacity={setBlueprintOpacity}
         handleClearBlueprintImage={handleClearBlueprintImage}
@@ -514,9 +876,12 @@ export default function FacilitiesView() {
           pxToMeters={pxToMeters}
           handleCanvasMouseDown={handleCanvasMouseDown}
           handleCanvasMouseMove={handleCanvasMouseMove}
-          handleCanvasMouseUp={handleCanvasMouseUp}
+          handleCanvasMouseUp={() => {}}
           handleZoneClick={handleZoneClick}
+          handleZoneMouseDown={handleZoneMouseDown}
+          handleZoneResizeMouseDown={handleZoneResizeMouseDown}
           handleStationMouseDown={handleStationMouseDown}
+          onOpenNewAreaModal={handleOpenNewAreaModal}
         />
 
         <FacilityInspectorDrawer
@@ -554,6 +919,7 @@ export default function FacilitiesView() {
         setShowFloorSpecsModal={setShowFloorSpecsModal}
         currentFloor={currentFloor}
         selectedBuilding={selectedBuilding}
+        onOpenEditFloor={handleOpenEditFloor}
         showNewBuildingModal={showNewBuildingModal}
         setShowNewBuildingModal={setShowNewBuildingModal}
         newBldgName={newBldgName}
@@ -563,6 +929,20 @@ export default function FacilitiesView() {
         newBldgAddress={newBldgAddress}
         setNewBldgAddress={setNewBldgAddress}
         onCreateBuilding={handleCreateBuildingSubmit}
+        showEditBuildingModal={showEditBuildingModal}
+        setShowEditBuildingModal={setShowEditBuildingModal}
+        editBldgName={editBldgName}
+        setEditBldgName={setEditBldgName}
+        editBldgCode={editBldgCode}
+        setEditBldgCode={setEditBldgCode}
+        editBldgAddress={editBldgAddress}
+        setEditBldgAddress={setEditBldgAddress}
+        editBldgLevels={editBldgLevels}
+        setEditBldgLevels={setEditBldgLevels}
+        onUpdateBuilding={handleUpdateBuildingSubmit}
+        showDeleteBuildingModal={showDeleteBuildingModal}
+        setShowDeleteBuildingModal={setShowDeleteBuildingModal}
+        onDeleteBuilding={handleDeleteBuildingSubmit}
         showNewFloorModal={showNewFloorModal}
         setShowNewFloorModal={setShowNewFloorModal}
         newFloorName={newFloorName}
@@ -572,6 +952,38 @@ export default function FacilitiesView() {
         newFloorLength={newFloorLength}
         setNewFloorLength={setNewFloorLength}
         onCreateFloor={handleCreateFloorSubmit}
+        showEditFloorModal={showEditFloorModal}
+        setShowEditFloorModal={setShowEditFloorModal}
+        editFloorName={editFloorName}
+        setEditFloorName={setEditFloorName}
+        editFloorWidth={editFloorWidth}
+        setEditFloorWidth={setEditFloorWidth}
+        editFloorLength={editFloorLength}
+        setEditFloorLength={setEditFloorLength}
+        editFloorLevel={editFloorLevel}
+        setEditFloorLevel={setEditFloorLevel}
+        editFloorCapacity={editFloorCapacity}
+        setEditFloorCapacity={setEditFloorCapacity}
+        onUpdateFloor={handleUpdateFloorSubmit}
+        showDeleteFloorModal={showDeleteFloorModal}
+        setShowDeleteFloorModal={setShowDeleteFloorModal}
+        onDeleteFloor={handleDeleteFloorSubmit}
+
+        showNewAreaModal={showNewAreaModal}
+        setShowNewAreaModal={setShowNewAreaModal}
+        newAreaName={newAreaName}
+        setNewAreaName={setNewAreaName}
+        newAreaType={newAreaType}
+        setNewAreaType={setNewAreaType}
+        newAreaWidthMeter={newAreaWidthMeter}
+        setNewAreaWidthMeter={setNewAreaWidthMeter}
+        newAreaLengthMeter={newAreaLengthMeter}
+        setNewAreaLengthMeter={setNewAreaLengthMeter}
+        newAreaXMeter={newAreaXMeter}
+        setNewAreaXMeter={setNewAreaXMeter}
+        newAreaYMeter={newAreaYMeter}
+        setNewAreaYMeter={setNewAreaYMeter}
+        onCreateArea={handleCreateAreaSubmit}
       />
     </div>
   );

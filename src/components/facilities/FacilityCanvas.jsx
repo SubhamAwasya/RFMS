@@ -1,5 +1,6 @@
 import React from "react";
 import FacilityToolbox from "./FacilityToolbox";
+import { getZoneConfig } from "../../utils/zoneConfig";
 
 export default function FacilityCanvas({
   viewportRef,
@@ -27,7 +28,10 @@ export default function FacilityCanvas({
   handleCanvasMouseMove,
   handleCanvasMouseUp,
   handleZoneClick,
+  handleZoneMouseDown,
+  handleZoneResizeMouseDown,
   handleStationMouseDown,
+  onOpenNewAreaModal,
 }) {
   return (
     <div
@@ -78,7 +82,11 @@ export default function FacilityCanvas({
       </div>
 
       {/* Dedicated Vertical CAD Toolbox Floating Component */}
-      <div className="absolute top-4 left-4 z-30">
+      <div
+        className="absolute top-4 left-4 z-30"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
         <FacilityToolbox
           activeTool={activeTool}
           setActiveTool={setActiveTool}
@@ -89,6 +97,7 @@ export default function FacilityCanvas({
           setIsDrawingZone={setIsDrawingZone}
           setSelectedItem={setSelectedItem}
           onOpenManualCoords={() => setShowManualCoordModal(true)}
+          onOpenNewAreaModal={onOpenNewAreaModal}
         />
       </div>
 
@@ -133,6 +142,7 @@ export default function FacilityCanvas({
           {currentFloor.customMapImage && (
             <image
               href={currentFloor.customMapImage}
+              xlinkHref={currentFloor.customMapImage}
               width="1000"
               height="650"
               preserveAspectRatio="none"
@@ -153,39 +163,27 @@ export default function FacilityCanvas({
                 strokeWidth="2.5"
                 rx="10"
               />
-              {/* Department Areas */}
-              <g opacity="0.6">
-                <rect x="70" y="70" width="240" height="150" rx="8" className="fill-slate-100/50 dark:fill-slate-900/40 stroke-slate-300 dark:stroke-slate-800" strokeWidth="1.5" />
-                <text x="85" y="95" className="fill-slate-600 dark:fill-slate-400 font-bold" fontSize="10">INBOUND RECEIVING BAY</text>
-
-                <rect x="350" y="70" width="260" height="150" rx="8" className="fill-slate-100/50 dark:fill-slate-900/40 stroke-slate-300 dark:stroke-slate-800" strokeWidth="1.5" />
-                <text x="365" y="95" className="fill-slate-600 dark:fill-slate-400 font-bold" fontSize="10">MAIN ASSEMBLY LINE</text>
-
-                <rect x="650" y="70" width="280" height="150" rx="8" className="fill-amber-500/5 dark:fill-amber-500/10 stroke-amber-500/20" strokeWidth="1.5" />
-                <text x="665" y="95" className="fill-amber-600 dark:fill-amber-400 font-bold" fontSize="10">CHARGING BAY ALPHA</text>
-
-                <rect x="70" y="420" width="540" height="150" rx="8" className="fill-slate-100/50 dark:fill-slate-900/40 stroke-slate-300 dark:stroke-slate-800" strokeWidth="1.5" />
-                <text x="85" y="445" className="fill-slate-600 dark:fill-slate-400 font-bold" fontSize="10">HIGH-BAY STORAGE RACKS</text>
-
-                <rect x="650" y="420" width="280" height="150" rx="8" className="fill-slate-100/50 dark:fill-slate-900/40 stroke-slate-300 dark:stroke-slate-800" strokeWidth="1.5" />
-                <text x="665" y="445" className="fill-slate-600 dark:fill-slate-400 font-bold" fontSize="10">OUTBOUND DISPATCH DOCKS</text>
-              </g>
             </g>
           )}
 
-          {/* SAFETY RESTRICTED ZONES */}
+          {/* USER-CREATED OPERATIONAL AREAS & SAFETY ZONES */}
           <g id="zonesLayer">
             {(currentFloor.restrictedZones || []).map((zone) => {
               const isSelected = selectedItem?.type === "zone" && selectedItem.id === zone.id;
-              const isNoGo = zone.type === "no-go";
-              const isSlow = zone.type === "slow";
+              const config = getZoneConfig(zone.type);
+              const isSafety = config.isSafety;
 
               return (
                 <g
                   key={zone.id}
+                  onMouseDown={(e) => handleZoneMouseDown ? handleZoneMouseDown(e, zone.id) : handleZoneClick(e, zone.id)}
                   onClick={(e) => handleZoneClick(e, zone.id)}
-                  className={`cursor-pointer transition-all ${
-                    activeTool === "delete" ? "hover:opacity-60" : ""
+                  className={`transition-all ${
+                    activeTool === "delete"
+                      ? "cursor-pointer hover:opacity-60"
+                      : activeTool === "draw-zone"
+                      ? "cursor-crosshair"
+                      : "cursor-move"
                   }`}
                 >
                   <rect
@@ -193,85 +191,108 @@ export default function FacilityCanvas({
                     y={zone.y}
                     width={zone.w}
                     height={zone.h}
-                    fill={
-                      isNoGo
-                        ? "url(#hazardRed)"
-                        : isSlow
-                        ? "url(#hazardAmber)"
-                        : "rgba(56, 189, 248, 0.15)"
-                    }
-                    stroke={
-                      isSelected
-                        ? "#3b82f6"
-                        : isNoGo
-                        ? "#ef4444"
-                        : isSlow
-                        ? "#f59e0b"
-                        : "#38bdf8"
-                    }
-                    strokeWidth={isSelected ? "3" : "1.5"}
-                    strokeDasharray={isNoGo || isSlow ? "4 4" : "none"}
-                    rx="6"
+                    fill={config.fill}
+                    stroke={isSelected ? "#3b82f6" : config.stroke}
+                    strokeWidth={isSelected ? "3" : isSafety ? "2" : "1.5"}
+                    strokeDasharray={isSafety ? "4 4" : "none"}
+                    rx="8"
                   />
 
-                  {/* Zone Label Badge */}
+                  {/* Header / Title Area Badge */}
                   <rect
                     x={zone.x + 8}
                     y={zone.y + 6}
-                    width={zone.name.length * 6 + 18}
-                    height="18"
+                    width={Math.max(70, (zone.name || "Area").length * 6.5 + 24)}
+                    height="20"
                     rx="4"
-                    className="fill-slate-900/90"
+                    fill="rgba(15, 23, 42, 0.88)"
                   />
                   <text
                     x={zone.x + 14}
-                    y={zone.y + 19}
-                    className={`font-bold text-[9px] ${
-                      isNoGo ? "fill-red-400" : isSlow ? "fill-amber-400" : "fill-cyan-400"
-                    }`}
+                    y={zone.y + 20}
+                    fill={isSelected ? "#60a5fa" : config.stroke}
+                    fontSize="10"
+                    fontWeight="bold"
+                    letterSpacing="0.5"
                   >
-                    {zone.name}
+                    {config.icon} {(zone.name || "AREA").toUpperCase()}
                   </text>
+
+                  {/* Physical Dimensions Readout in bottom-right if area is wide enough */}
+                  {zone.w >= 75 && zone.h >= 45 && (
+                    <text
+                      x={zone.x + zone.w - 8}
+                      y={zone.y + zone.h - 8}
+                      textAnchor="end"
+                      fill="rgba(148, 163, 184, 0.75)"
+                      fontSize="9"
+                      fontFamily="monospace"
+                    >
+                      {pxToMeters(zone.w)}m × {pxToMeters(zone.h)}m
+                    </text>
+                  )}
+
+                  {/* Resize Handle at Bottom-Right Corner (when selected) */}
+                  {isSelected && activeTool !== "delete" && activeTool !== "draw-zone" && (
+                    <g
+                      className="cursor-nwse-resize"
+                      onMouseDown={(e) => handleZoneResizeMouseDown?.(e, zone.id)}
+                    >
+                      <rect
+                        x={zone.x + zone.w - 12}
+                        y={zone.y + zone.h - 12}
+                        width="12"
+                        height="12"
+                        rx="3"
+                        fill="#3b82f6"
+                        stroke="#ffffff"
+                        strokeWidth="1.5"
+                      />
+                    </g>
+                  )}
                 </g>
               );
             })}
           </g>
 
-          {/* CURRENT DRAWING BOUNDING BOX */}
+          {/* CURRENT DRAWING BOUNDING BOX PREVIEW */}
           {isDrawingZone && currentDrawZone && (
-            <g id="activeDrawingZonePreview">
-              <rect
-                x={currentDrawZone.x}
-                y={currentDrawZone.y}
-                width={currentDrawZone.w}
-                height={currentDrawZone.h}
-                fill={
-                  zoneTypeToAdd === "no-go"
-                    ? "url(#hazardRed)"
-                    : zoneTypeToAdd === "slow"
-                    ? "url(#hazardAmber)"
-                    : "rgba(56, 189, 248, 0.2)"
-                }
-                stroke={zoneTypeToAdd === "no-go" ? "#ef4444" : "#f59e0b"}
-                strokeWidth="2"
-                strokeDasharray="4 4"
-                rx="6"
-              />
-              <rect
-                x={currentDrawZone.x + 8}
-                y={currentDrawZone.y + 8}
-                width="110"
-                height="20"
-                rx="4"
-                className="fill-slate-900/90"
-              />
-              <text
-                x={currentDrawZone.x + 14}
-                y={currentDrawZone.y + 22}
-                className="fill-white font-bold text-[9.5px]"
-              >
-                {pxToMeters(currentDrawZone.w)}m × {pxToMeters(currentDrawZone.h)}m
-              </text>
+            <g id="activeDrawingZonePreview" className="pointer-events-none select-none">
+              {(() => {
+                const config = getZoneConfig(zoneTypeToAdd);
+                return (
+                  <>
+                    <rect
+                      x={currentDrawZone.x}
+                      y={currentDrawZone.y}
+                      width={currentDrawZone.w}
+                      height={currentDrawZone.h}
+                      fill={config.fill}
+                      stroke={config.stroke}
+                      strokeWidth="2"
+                      strokeDasharray="4 4"
+                      rx="6"
+                    />
+                    <rect
+                      x={currentDrawZone.x + 8}
+                      y={currentDrawZone.y + 8}
+                      width="140"
+                      height="22"
+                      rx="4"
+                      className="fill-slate-900/90"
+                    />
+                    <text
+                      x={currentDrawZone.x + 14}
+                      y={currentDrawZone.y + 23}
+                      fill={config.stroke}
+                      fontSize="10"
+                      fontWeight="bold"
+                    >
+                      {config.icon} {pxToMeters(currentDrawZone.w)}m × {pxToMeters(currentDrawZone.h)}m
+                    </text>
+                  </>
+                );
+              })()}
             </g>
           )}
 

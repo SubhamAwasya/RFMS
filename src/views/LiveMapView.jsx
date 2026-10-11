@@ -260,10 +260,11 @@ export default function LiveMapView({
         activeFloor={activeFloor}
         buildings={fleetCtx?.buildings}
         activeBuildingId={fleetCtx?.activeBuildingId}
-        onSelectBuilding={(id) => fleetCtx?.setActiveBuildingId(id)}
+        onSelectBuilding={(id) => (fleetCtx?.selectBuilding ? fleetCtx.selectBuilding(id) : fleetCtx?.setActiveBuildingId(id))}
         floors={fleetCtx?.floors}
         activeFloorId={fleetCtx?.activeFloorId}
         onSelectFloor={(id) => fleetCtx?.setActiveFloorId(id)}
+        agvCount={agvs.length}
       />
 
       <div className="flex-1 flex overflow-hidden relative min-h-0">

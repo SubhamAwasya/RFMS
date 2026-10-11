@@ -12,6 +12,8 @@ import {
   Sliders,
   ImageOff,
   Radio,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 export default function FacilityHeader({
@@ -19,15 +21,21 @@ export default function FacilityHeader({
   buildings,
   activeBuildingId,
   setActiveBuildingId,
+  onSelectBuilding,
   setShowNewBuildingModal,
+  setShowEditBuildingModal,
+  setShowDeleteBuildingModal,
   currentFloor,
   floors,
   activeFloorId,
   setActiveFloorId,
   setSelectedItem,
   setShowNewFloorModal,
+  setShowEditFloorModal,
+  setShowDeleteFloorModal,
   setShowFloorSpecsModal,
   handleImageUpload,
+  onTriggerUploadBlueprint,
   blueprintOpacity,
   setBlueprintOpacity,
   handleClearBlueprintImage,
@@ -36,6 +44,8 @@ export default function FacilityHeader({
   selectedItem,
   onNavigateLiveMap,
 }) {
+  const buildingFloors = (floors || []).filter((f) => f.buildingId === activeBuildingId);
+
   return (
     <div className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-3 sm:px-5 z-20 shrink-0 gap-2 transition-colors">
       {/* LEFT: Hierarchy Breadcrumbs (Facility / Floor) */}
@@ -55,15 +65,15 @@ export default function FacilityHeader({
             <DropdownMenu.Content
               align="start"
               sideOffset={6}
-              className="min-w-[200px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 shadow-xl text-xs z-50 animate-in fade-in zoom-in-95 duration-100"
+              className="min-w-[210px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 shadow-xl text-xs z-50 animate-in fade-in zoom-in-95 duration-100"
             >
               <DropdownMenu.Label className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Select Building
               </DropdownMenu.Label>
-              {buildings.map((b) => (
+              {(buildings || []).map((b) => (
                 <DropdownMenu.Item
                   key={b.id}
-                  onClick={() => setActiveBuildingId(b.id)}
+                  onClick={() => onSelectBuilding ? onSelectBuilding(b.id) : setActiveBuildingId(b.id)}
                   className={`px-2.5 py-1.5 rounded-lg flex items-center justify-between cursor-pointer outline-none transition-colors ${
                     b.id === activeBuildingId
                       ? "bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold"
@@ -76,12 +86,30 @@ export default function FacilityHeader({
               ))}
               <DropdownMenu.Separator className="h-px bg-slate-100 dark:border-slate-800 my-1" />
               <DropdownMenu.Item
-                onClick={() => setShowNewBuildingModal(true)}
+                onClick={() => setShowNewBuildingModal?.(true)}
                 className="px-2.5 py-1.5 rounded-lg flex items-center gap-2 font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer outline-none"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>New Building...</span>
               </DropdownMenu.Item>
+              {selectedBuilding && (
+                <>
+                  <DropdownMenu.Item
+                    onClick={() => setShowEditBuildingModal?.(true)}
+                    className="px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer outline-none"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Edit Current Building...</span>
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => setShowDeleteBuildingModal?.(true)}
+                    className="px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer outline-none font-medium"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Building</span>
+                  </DropdownMenu.Item>
+                </>
+              )}
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
@@ -103,40 +131,61 @@ export default function FacilityHeader({
             <DropdownMenu.Content
               align="start"
               sideOffset={6}
-              className="min-w-[210px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 shadow-xl text-xs z-50 animate-in fade-in zoom-in-95 duration-100"
+              className="min-w-[220px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 shadow-xl text-xs z-50 animate-in fade-in zoom-in-95 duration-100"
             >
               <DropdownMenu.Label className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Floor Levels ({selectedBuilding?.name})
+                Floor Levels ({selectedBuilding?.name || "Building"})
               </DropdownMenu.Label>
-              {floors
-                .filter((f) => f.buildingId === activeBuildingId)
-                .map((f) => (
-                  <DropdownMenu.Item
-                    key={f.id}
-                    onClick={() => {
-                      setActiveFloorId(f.id);
-                      setSelectedItem(null);
-                    }}
-                    className={`px-2.5 py-1.5 rounded-lg flex items-center justify-between cursor-pointer outline-none transition-colors ${
-                      f.id === activeFloorId
-                        ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 font-bold"
-                        : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    <span className="truncate">{f.name}</span>
-                    {f.id === activeFloorId && <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
-                  </DropdownMenu.Item>
-                ))}
+              {buildingFloors.map((f) => (
+                <DropdownMenu.Item
+                  key={f.id}
+                  onClick={() => {
+                    setActiveFloorId(f.id);
+                    setSelectedItem?.(null);
+                  }}
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center justify-between cursor-pointer outline-none transition-colors ${
+                    f.id === activeFloorId
+                      ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 font-bold"
+                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <span className="truncate">{f.name}</span>
+                  {f.id === activeFloorId && <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                </DropdownMenu.Item>
+              ))}
+              {buildingFloors.length === 0 && (
+                <div className="px-2.5 py-2 text-xs text-slate-400 italic">
+                  No floor levels in this building
+                </div>
+              )}
               <DropdownMenu.Separator className="h-px bg-slate-100 dark:border-slate-800 my-1" />
               <DropdownMenu.Item
-                onClick={() => setShowNewFloorModal(true)}
+                onClick={() => setShowNewFloorModal?.(true)}
                 className="px-2.5 py-1.5 rounded-lg flex items-center gap-2 font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer outline-none"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>New Floor Level...</span>
               </DropdownMenu.Item>
+              {currentFloor && currentFloor.buildingId === activeBuildingId && (
+                <>
+                  <DropdownMenu.Item
+                    onClick={() => setShowEditFloorModal?.(true)}
+                    className="px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer outline-none"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Edit Floor Specs...</span>
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => setShowDeleteFloorModal?.(true)}
+                    className="px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer outline-none font-medium"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Floor</span>
+                  </DropdownMenu.Item>
+                </>
+              )}
               <DropdownMenu.Item
-                onClick={() => setShowFloorSpecsModal(true)}
+                onClick={() => setShowFloorSpecsModal?.(true)}
                 className="px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer outline-none"
               >
                 <Info className="w-3.5 h-3.5 text-slate-400" />
@@ -186,18 +235,15 @@ export default function FacilityHeader({
               </DropdownMenu.Label>
 
               {/* File Upload Option */}
-              <label className="px-2.5 py-2 rounded-lg flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-colors">
+              <DropdownMenu.Item
+                onClick={() => onTriggerUploadBlueprint?.()}
+                className="px-2.5 py-2 rounded-lg flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-colors outline-none font-medium"
+              >
                 <Upload className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                 <span>
-                  {currentFloor.customMapImage ? "Replace Image..." : "Upload Map Image..."}
+                  {currentFloor.customMapImage ? "Replace Blueprint Image..." : "Upload Map Image..."}
                 </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                />
-              </label>
+              </DropdownMenu.Item>
 
               {currentFloor.customMapImage && (
                 <>

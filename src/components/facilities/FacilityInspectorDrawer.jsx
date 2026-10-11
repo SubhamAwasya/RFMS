@@ -244,9 +244,15 @@ export default function FacilityInspectorDrawer({
               onChange={(e) => handleUpdateSelectedZone("type", e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white font-medium"
             >
-              <option value="no-go">🛑 No-Go (Forbidden Area)</option>
-              <option value="slow">⚠️ Slow Zone (Speed capped 0.4 m/s)</option>
+              <option value="receiving">📥 Inbound Receiving Bay</option>
+              <option value="assembly">⚙️ Main Assembly Line</option>
+              <option value="charging-bay">⚡ Charging Bay Hub</option>
+              <option value="storage">🏗️ High-Bay Storage Racks</option>
+              <option value="dispatch">🚚 Outbound Dispatch Docks</option>
               <option value="staging">📦 Staging Buffer Area</option>
+              <option value="custom-area">🏢 Department / Work Zone</option>
+              <option value="no-go">🛑 No-Go (Keep-Out Zone)</option>
+              <option value="slow">⚠️ Slow Zone (Speed capped 0.4 m/s)</option>
             </select>
           </div>
 
@@ -402,13 +408,13 @@ export default function FacilityInspectorDrawer({
           {/* Safety Zones List */}
           <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              <span>Safety Zones ({(currentFloor.restrictedZones || []).length})</span>
+              <span>Operational Areas & Zones ({(currentFloor.restrictedZones || []).length})</span>
             </div>
 
             <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
               {(currentFloor.restrictedZones || []).length === 0 ? (
                 <div className="p-3 text-center text-[11px] text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-lg">
-                  No restricted zones drawn yet
+                  No areas or zones created yet. Use "Draw Area / Zone" to create one.
                 </div>
               ) : (
                 (currentFloor.restrictedZones || []).map((z) => (

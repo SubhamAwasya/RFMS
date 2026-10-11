@@ -2,6 +2,7 @@ import React from "react";
 import MapToolbar from "./MapToolbar";
 import AgvVehicleMarker from "./AgvVehicleMarker";
 import { getRobotPath, getRobotColorTheme } from "../../constants";
+import { getZoneConfig } from "../../utils/zoneConfig";
 
 export default function LiveMapCanvas({
   viewportRef,
@@ -39,7 +40,7 @@ export default function LiveMapCanvas({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      className={`flex-1 relative overflow-hidden bg-slate-100/60 dark:bg-slate-950 flex items-center justify-center p-4 transition-colors select-none ${
+      className={`flex-1 relative overflow-hidden bg-slate-100/60 dark:bg-slate-950 flex items-center justify-center p-2 sm:p-3 transition-colors select-none ${
         isDragging ? "cursor-grabbing" : "cursor-grab"
       }`}
     >
@@ -59,7 +60,7 @@ export default function LiveMapCanvas({
 
       {/* Factory Blueprint CAD Map Canvas */}
       <div
-        className="w-full h-full max-w-5xl max-h-[720px] flex items-center justify-center origin-center will-change-transform"
+        className="w-full h-full max-w-7xl max-h-[860px] flex items-center justify-center origin-center will-change-transform"
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           transition: isDragging ? "none" : "transform 120ms ease-out",
@@ -158,6 +159,7 @@ export default function LiveMapCanvas({
           {activeFloor.customMapImage && (
             <image
               href={activeFloor.customMapImage}
+              xlinkHref={activeFloor.customMapImage}
               width="1000"
               height="650"
               preserveAspectRatio="none"
@@ -165,10 +167,9 @@ export default function LiveMapCanvas({
             />
           )}
 
-          {/* Default Warehouse Structural Walls & Layout if no custom blueprint */}
+          {/* Exterior Structural Walls (if no custom blueprint) */}
           {!activeFloor.customMapImage && (
             <g id="structuralLayout" opacity="0.9">
-              {/* Exterior Wall */}
               <rect
                 x="40"
                 y="40"
@@ -179,112 +180,18 @@ export default function LiveMapCanvas({
                 strokeWidth="3"
                 rx="12"
               />
-
-              {/* Warehouse Department Rooms */}
-              <g id="rooms">
-                {/* Inbound Receiving Dock Bay */}
-                <rect
-                  x="70"
-                  y="70"
-                  width="240"
-                  height="160"
-                  rx="8"
-                  className="fill-slate-100/60 dark:fill-slate-900/50 stroke-slate-250 dark:stroke-slate-800"
-                  strokeWidth="1.5"
-                />
-                <text
-                  x="85"
-                  y="95"
-                  className="fill-slate-700 dark:fill-slate-300 font-bold"
-                  fontSize="11"
-                >
-                  INBOUND RECEIVING BAY
-                </text>
-
-                {/* Assembly & Packaging Line */}
-                <rect
-                  x="350"
-                  y="70"
-                  width="260"
-                  height="160"
-                  rx="8"
-                  className="fill-slate-100/60 dark:fill-slate-900/50 stroke-slate-250 dark:stroke-slate-800"
-                  strokeWidth="1.5"
-                />
-                <text
-                  x="365"
-                  y="95"
-                  className="fill-slate-700 dark:fill-slate-300 font-bold"
-                  fontSize="11"
-                >
-                  MAIN ASSEMBLY STAGING
-                </text>
-
-                {/* Charging & Maintenance Hub */}
-                <rect
-                  x="650"
-                  y="70"
-                  width="280"
-                  height="160"
-                  rx="8"
-                  className="fill-amber-500/5 dark:fill-amber-500/10 stroke-amber-500/20"
-                  strokeWidth="1.5"
-                />
-                <text
-                  x="665"
-                  y="95"
-                  className="fill-amber-600 dark:fill-amber-400 font-bold"
-                  fontSize="11"
-                >
-                  FAST-CHARGING BAY ALPHA
-                </text>
-
-                {/* High-Bay Pallet Racks Area */}
-                <rect
-                  x="70"
-                  y="420"
-                  width="540"
-                  height="160"
-                  rx="8"
-                  className="fill-slate-100/60 dark:fill-slate-900/50 stroke-slate-250 dark:stroke-slate-800"
-                  strokeWidth="1.5"
-                />
-                <text
-                  x="85"
-                  y="445"
-                  className="fill-slate-700 dark:fill-slate-300 font-bold"
-                  fontSize="11"
-                >
-                  HIGH-BAY STORAGE RACKS (RACK 01 - 08)
-                </text>
-
-                {/* Finished Outbound Logistics */}
-                <rect
-                  x="650"
-                  y="420"
-                  width="280"
-                  height="160"
-                  rx="8"
-                  className="fill-slate-100/60 dark:fill-slate-900/50 stroke-slate-250 dark:stroke-slate-800"
-                  strokeWidth="1.5"
-                />
-                <text
-                  x="665"
-                  y="445"
-                  className="fill-slate-700 dark:fill-slate-300 font-bold"
-                  fontSize="11"
-                >
-                  OUTBOUND DISPATCH DOCKS
-                </text>
-              </g>
             </g>
           )}
 
-          {/* Restricted Zones (No-Go & Slow Zones) */}
+          {/* Operational Areas & Safety Zones */}
           {layers.showZones && (
             <g id="restrictedZones">
               {(activeFloor.restrictedZones || []).map((zone) => {
+                const config = getZoneConfig(zone.type);
+                const isSafety = config.isSafety;
                 const isNoGo = zone.type === "no-go";
+                const isSlow = zone.type === "slow";
+
                 return (
                   <g key={zone.id}>
                     <rect
@@ -292,31 +199,35 @@ export default function LiveMapCanvas({
                       y={zone.y}
                       width={zone.w}
                       height={zone.h}
-                      fill={isNoGo ? "url(#hazardStripesRed)" : "url(#hazardStripesAmber)"}
-                      className={
+                      fill={
                         isNoGo
-                          ? "stroke-red-500/80 stroke-dasharray-[4,4]"
-                          : "stroke-amber-500/80 stroke-dasharray-[4,4]"
+                          ? "url(#hazardStripesRed)"
+                          : isSlow
+                          ? "url(#hazardStripesAmber)"
+                          : config.fill
                       }
-                      strokeWidth="1.5"
-                      rx="6"
+                      stroke={config.stroke}
+                      strokeWidth={isSafety ? "2" : "1.5"}
+                      strokeDasharray={isSafety ? "4 4" : "none"}
+                      rx="8"
                     />
+                    {/* Badge Label */}
                     <rect
                       x={zone.x + 8}
                       y={zone.y + 6}
-                      width={zone.name.length * 6 + 18}
-                      height="18"
+                      width={Math.max(65, (zone.name || "Area").length * 6.5 + 24)}
+                      height="20"
                       rx="4"
                       className="fill-slate-900/90"
                     />
                     <text
                       x={zone.x + 14}
-                      y={zone.y + 19}
-                      className={`font-bold text-[9px] ${
-                        isNoGo ? "fill-red-400" : "fill-amber-400"
-                      }`}
+                      y={zone.y + 20}
+                      fill={config.stroke}
+                      fontSize="9.5"
+                      fontWeight="bold"
                     >
-                      {zone.name}
+                      {config.icon} {(zone.name || "AREA").toUpperCase()}
                     </text>
                   </g>
                 );
