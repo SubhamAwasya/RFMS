@@ -13,7 +13,7 @@ export const ZONE_TYPE_CONFIG = {
     textColor: "#2563eb",
     darkTextColor: "#60a5fa",
     badgeBg: "rgba(59, 130, 246, 0.15)",
-    icon: "📥",
+    icon: "",
     description: "Unloading docks, incoming material intake, inspection",
   },
   assembly: {
@@ -26,7 +26,7 @@ export const ZONE_TYPE_CONFIG = {
     textColor: "#7c3aed",
     darkTextColor: "#a78bfa",
     badgeBg: "rgba(139, 92, 246, 0.15)",
-    icon: "⚙️",
+    icon: "",
     description: "Work cells, assembly conveyors, production line",
   },
   "charging-bay": {
@@ -39,7 +39,7 @@ export const ZONE_TYPE_CONFIG = {
     textColor: "#d97706",
     darkTextColor: "#fbbf24",
     badgeBg: "rgba(245, 158, 11, 0.15)",
-    icon: "⚡",
+    icon: "",
     description: "Fast-charging pads, battery swap, standby park",
   },
   storage: {
@@ -52,7 +52,7 @@ export const ZONE_TYPE_CONFIG = {
     textColor: "#475569",
     darkTextColor: "#94a3b8",
     badgeBg: "rgba(100, 116, 139, 0.15)",
-    icon: "🏗️",
+    icon: "",
     description: "Pallet racking, warehouse inventory, buffer storage",
   },
   dispatch: {
@@ -65,7 +65,7 @@ export const ZONE_TYPE_CONFIG = {
     textColor: "#059669",
     darkTextColor: "#34d399",
     badgeBg: "rgba(16, 185, 129, 0.15)",
-    icon: "🚚",
+    icon: "",
     description: "Shipping dock, final staging, outbound logistics",
   },
   staging: {
@@ -78,7 +78,7 @@ export const ZONE_TYPE_CONFIG = {
     textColor: "#0891b2",
     darkTextColor: "#22d3ee",
     badgeBg: "rgba(6, 182, 212, 0.15)",
-    icon: "📦",
+    icon: "",
     description: "Temporary pallet hold, transit buffer, queue area",
   },
   "custom-area": {
@@ -91,7 +91,7 @@ export const ZONE_TYPE_CONFIG = {
     textColor: "#4f46e5",
     darkTextColor: "#818cf8",
     badgeBg: "rgba(99, 102, 241, 0.15)",
-    icon: "🏢",
+    icon: "",
     description: "Custom operational zone, QA testing, maintenance area",
   },
   "no-go": {
@@ -104,7 +104,7 @@ export const ZONE_TYPE_CONFIG = {
     textColor: "#dc2626",
     darkTextColor: "#f87171",
     badgeBg: "rgba(239, 68, 68, 0.2)",
-    icon: "🛑",
+    icon: "",
     description: "Forbidden area for AGVs, pedestrian crosswalk, hazard",
   },
   slow: {
@@ -117,7 +117,7 @@ export const ZONE_TYPE_CONFIG = {
     textColor: "#d97706",
     darkTextColor: "#fbbf24",
     badgeBg: "rgba(245, 158, 11, 0.2)",
-    icon: "⚠️",
+    icon: "",
     description: "Speed capped zone, high human-traffic or blind turn",
   },
 };

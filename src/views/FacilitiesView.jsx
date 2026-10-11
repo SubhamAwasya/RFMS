@@ -89,9 +89,6 @@ export default function FacilitiesView() {
   const [newAreaXMeter, setNewAreaXMeter] = useState(15);
   const [newAreaYMeter, setNewAreaYMeter] = useState(15);
 
-  // Floor Dimensions & Specs Modal
-  const [showFloorSpecsModal, setShowFloorSpecsModal] = useState(false);
-
   // Modals for Building & Floor creation
   const [showNewBuildingModal, setShowNewBuildingModal] = useState(false);
   const [showNewFloorModal, setShowNewFloorModal] = useState(false);
@@ -838,7 +835,6 @@ export default function FacilitiesView() {
         setShowNewFloorModal={setShowNewFloorModal}
         setShowEditFloorModal={handleOpenEditFloor}
         setShowDeleteFloorModal={() => setShowDeleteFloorModal(true)}
-        setShowFloorSpecsModal={setShowFloorSpecsModal}
         handleImageUpload={handleImageUpload}
         onTriggerUploadBlueprint={() => blueprintInputRef.current?.click()}
         blueprintOpacity={blueprintOpacity}
@@ -915,11 +911,8 @@ export default function FacilitiesView() {
         manualYMeter={manualYMeter}
         setManualYMeter={setManualYMeter}
         onManualDropStation={handleManualDropStation}
-        showFloorSpecsModal={showFloorSpecsModal}
-        setShowFloorSpecsModal={setShowFloorSpecsModal}
         currentFloor={currentFloor}
         selectedBuilding={selectedBuilding}
-        onOpenEditFloor={handleOpenEditFloor}
         showNewBuildingModal={showNewBuildingModal}
         setShowNewBuildingModal={setShowNewBuildingModal}
         newBldgName={newBldgName}

@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   AlertOctagon,
   Download,
-  Trash2,
 } from "lucide-react";
 import { useFleet } from "../../context/FleetContext";
 

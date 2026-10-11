@@ -79,10 +79,10 @@ export default function FacilityInspectorDrawer({
               onChange={(e) => handleUpdateSelectedStation("type", e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white font-medium"
             >
-              <option value="dock">📦 Docking Bay (Receiving)</option>
-              <option value="charger">⚡ Fast-Charger Pad</option>
-              <option value="rack">🏗️ Storage Rack</option>
-              <option value="elevator">🛗 Freight Elevator</option>
+              <option value="dock">Docking Bay</option>
+              <option value="charger">Fast-Charger Pad</option>
+              <option value="rack">Storage Rack</option>
+              <option value="elevator">Freight Elevator</option>
             </select>
           </div>
 
@@ -244,15 +244,15 @@ export default function FacilityInspectorDrawer({
               onChange={(e) => handleUpdateSelectedZone("type", e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white font-medium"
             >
-              <option value="receiving">📥 Inbound Receiving Bay</option>
-              <option value="assembly">⚙️ Main Assembly Line</option>
-              <option value="charging-bay">⚡ Charging Bay Hub</option>
-              <option value="storage">🏗️ High-Bay Storage Racks</option>
-              <option value="dispatch">🚚 Outbound Dispatch Docks</option>
-              <option value="staging">📦 Staging Buffer Area</option>
-              <option value="custom-area">🏢 Department / Work Zone</option>
-              <option value="no-go">🛑 No-Go (Keep-Out Zone)</option>
-              <option value="slow">⚠️ Slow Zone (Speed capped 0.4 m/s)</option>
+              <option value="receiving">Inbound Receiving Bay</option>
+              <option value="assembly">Main Assembly Line</option>
+              <option value="charging-bay">Charging Bay Hub</option>
+              <option value="storage">High-Bay Storage Racks</option>
+              <option value="dispatch">Outbound Dispatch Docks</option>
+              <option value="staging">Staging Buffer Area</option>
+              <option value="custom-area">Work / Operational Zone</option>
+              <option value="no-go">No-Go (Keep-Out Zone)</option>
+              <option value="slow">Slow Zone (0.4 m/s limit)</option>
             </select>
           </div>
 

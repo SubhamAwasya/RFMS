@@ -6,7 +6,6 @@ import {
   Activity,
   Bell,
   Layers,
-  Users,
   Settings,
   LogOut,
   Boxes,
@@ -51,12 +50,13 @@ export default function Sidebar({
     { id: "robots", label: "AGVs / Robots", icon: Bot },
     { id: "analytics", label: "Fleet Analytics", icon: Activity },
     { id: "alerts", label: "Alerts", icon: Bell, badge: alertCount },
-    { id: "users", label: "Users", icon: Users },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
   const handleSelect = (id) => {
-    if (setCurrentView) {
+    if (navCtx?.navigateTo) {
+      navCtx.navigateTo(id);
+    } else if (setCurrentView) {
       setCurrentView(id);
     }
     if (onCloseMobile) onCloseMobile();

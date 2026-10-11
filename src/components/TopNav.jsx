@@ -56,31 +56,31 @@ export default function TopNav({
   const getViewTitle = () => {
     switch (currentView) {
       case "dashboard":
-        return { title: "Dashboard", sub: "Real-time overview of your AGV fleet" };
+        return "Dashboard";
       case "robots":
-        return { title: "AGVs / Robots", sub: "Manage and monitor your AGV fleet" };
+        return "AGVs / Robots";
       case "robot-detail":
-        return { title: "AGV Detail & Control", sub: "Live telemetry and control console" };
+        return "AGV Detail";
       case "map":
-        return { title: "Live Map — Main Plant", sub: "Real-time spatial digital twin and autonomous looping paths" };
+        return "Live Map";
       case "analytics":
-        return { title: "Fleet Analytics", sub: "Performance, utilization and energy metrics" };
+        return "Fleet Analytics";
       case "maintenance":
-        return { title: "Maintenance", sub: "Track service, health and diagnostics" };
+        return "Maintenance";
       case "alerts":
-        return { title: "Fleet Alerts", sub: "Active obstacles and safety notices" };
+        return "Alerts";
       case "facilities":
-        return { title: "Maps & Facilities", sub: "Zones, docks, and restricted corridors" };
+        return "Maps & Facilities";
       case "users":
-        return { title: "Users", sub: "Operator access and role management" };
+        return "Users";
       case "settings":
-        return { title: "Settings", sub: "System configuration and parameters" };
+        return "Settings";
       default:
-        return { title: "RFMS", sub: "Robotics Fleet Management System" };
+        return "RFMS";
     }
   };
 
-  const { title, sub } = getViewTitle();
+  const title = getViewTitle();
 
   return (
     <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-3 sm:px-6 shrink-0 transition-colors">
@@ -98,27 +98,19 @@ export default function TopNav({
           <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">
             {title}
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block truncate">
-            {sub}
-          </p>
         </div>
       </div>
 
       {/* Right Controls */}
       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
         {/* Search Bar */}
-        <div className="relative hidden xl:block w-64">
+        <div className="relative hidden xl:block w-56">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search AGVs, facility paths, stations..."
+            placeholder="Search..."
             className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
           />
-        </div>
-
-        {/* Date / Timestamp */}
-        <div className="hidden 2xl:block text-xs font-medium text-slate-500 dark:text-slate-400 px-1">
-          Oct 10, 2026 11:32 AM
         </div>
 
 
@@ -170,10 +162,10 @@ export default function TopNav({
 
         {/* Dataset Quick Presets (Clear All | Reset Defaults | Rich Demo 10 AGVs) */}
         <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60 shadow-2xs">
-          {/* 1. Clear All Data (No Data) */}
+          {/* 1. Clear All Data */}
           <button
             onClick={() => fleetCtx?.clearAllData?.()}
-            title="Clear All Data (0 Robots, 0 Buildings, 0 Floors)"
+            title="Clear All Data"
             aria-label="Clear All Data"
             className="p-1.5 sm:px-2 sm:py-1 rounded-md text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-900 transition-colors flex items-center gap-1.5"
           >
@@ -181,26 +173,26 @@ export default function TopNav({
             <span className="hidden xl:inline text-xs font-semibold">Clear All</span>
           </button>
 
-          {/* 2. Reset Data to Factory Defaults */}
+          {/* 2. Reset Defaults */}
           <button
             onClick={() => fleetCtx?.resetAllData?.()}
-            title="Reset to Default Data (4 AGVs, 1 Building, 1 Floor)"
-            aria-label="Reset to Default Data"
+            title="Reset to Defaults"
+            aria-label="Reset to Defaults"
             className="p-1.5 sm:px-2 sm:py-1 rounded-md text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-900 transition-colors flex items-center gap-1.5"
           >
             <RotateCcw className="w-3.5 h-3.5 text-blue-500" />
             <span className="hidden xl:inline text-xs font-semibold">Reset</span>
           </button>
 
-          {/* 3. Load Rich Demo Data (10 Robots, More Buildings & Floors) */}
+          {/* 3. Load Demo Fleet */}
           <button
             onClick={() => fleetCtx?.loadRichDemoData?.()}
-            title="Load Rich Demo Data (10 Robots, 3 Buildings, 4 Floors)"
-            aria-label="Load Rich Demo Data"
+            title="Load Multi-Building Demo Fleet"
+            aria-label="Load Multi-Building Demo Fleet"
             className="p-1.5 sm:px-2 sm:py-1 rounded-md text-slate-600 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400 hover:bg-white dark:hover:bg-slate-900 transition-colors flex items-center gap-1.5"
           >
             <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-            <span className="hidden xl:inline text-xs font-semibold">Demo (10 AGVs)</span>
+            <span className="hidden xl:inline text-xs font-semibold">Demo Fleet</span>
           </button>
         </div>
 

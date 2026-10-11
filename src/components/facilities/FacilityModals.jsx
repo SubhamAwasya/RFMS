@@ -1,5 +1,5 @@
 import React from "react";
-import { Target, X, Info, Trash2, Pencil } from "lucide-react";
+import { Target, X, Trash2, Pencil } from "lucide-react";
 
 export default function FacilityModals({
   // Manual Coordinates Station Modal
@@ -15,12 +15,8 @@ export default function FacilityModals({
   setManualYMeter,
   onManualDropStation,
 
-  // Floor Specs Modal
-  showFloorSpecsModal,
-  setShowFloorSpecsModal,
   currentFloor,
   selectedBuilding,
-  onOpenEditFloor,
 
   // New Building Modal
   showNewBuildingModal,
@@ -144,10 +140,10 @@ export default function FacilityModals({
                   onChange={(e) => setManualStnType(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white"
                 >
-                  <option value="dock">📦 Docking Bay (Receiving)</option>
-                  <option value="charger">⚡ Fast-Charger Pad</option>
-                  <option value="rack">🏗️ Storage Rack</option>
-                  <option value="elevator">🛗 Freight Elevator</option>
+                  <option value="dock">Docking Bay</option>
+                  <option value="charger">Fast-Charger Pad</option>
+                  <option value="rack">Storage Rack</option>
+                  <option value="elevator">Freight Elevator</option>
                 </select>
               </div>
 
@@ -202,94 +198,7 @@ export default function FacilityModals({
         </div>
       )}
 
-      {/* MODAL 2: Floor Dimensions & Architectural Specs */}
-      {showFloorSpecsModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <Info className="w-5 h-5 text-emerald-500" />
-                <h4 className="text-base font-bold text-slate-900 dark:text-white">
-                  Floor Specifications
-                </h4>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowFloorSpecsModal(false)}
-                className="text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="space-y-3 mt-4 text-xs">
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Floor Name</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-100">{currentFloor.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Building</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-100">{selectedBuilding?.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Physical Dimensions</span>
-                  <span className="font-mono font-bold text-slate-800 dark:text-slate-100">
-                    {currentFloor.widthMeters}m × {currentFloor.lengthMeters}m
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Total Usable Area</span>
-                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    {(currentFloor.widthMeters * currentFloor.lengthMeters).toLocaleString()} m²
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Grid Scale Ratio</span>
-                  <span className="font-mono text-slate-800 dark:text-slate-100">
-                    10px = 1.0 meter (1m / cell)
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Placed Stations</span>
-                  <span className="font-bold text-blue-600 dark:text-blue-400">
-                    {(currentFloor.stations || []).length} stations
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Restricted Zones</span>
-                  <span className="font-bold text-amber-600 dark:text-amber-400">
-                    {(currentFloor.restrictedZones || []).length} zones
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowFloorSpecsModal(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold"
-                >
-                  Close
-                </button>
-                {onOpenEditFloor && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowFloorSpecsModal(false);
-                      onOpenEditFloor();
-                    }}
-                    className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center gap-1.5 transition-colors"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    <span>Edit Specs...</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* MODAL 3: New Building */}
       {showNewBuildingModal && (
@@ -546,7 +455,7 @@ export default function FacilityModals({
                 Are you sure you want to delete <strong>{selectedBuilding?.name}</strong>?
               </p>
               <p className="text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2.5 rounded-lg border border-amber-200 dark:border-amber-900/40">
-                ⚠️ All floor levels, custom blueprints, stations, and safety zones belonging to this building will also be deleted.
+                All floor levels, blueprints, stations, and safety zones belonging to this building will also be deleted.
               </p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
@@ -575,7 +484,7 @@ export default function FacilityModals({
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h4 className="text-base font-bold text-slate-900 dark:text-white">
-                Edit Floor Specifications
+                Edit Floor
               </h4>
               <button
                 type="button"
@@ -667,7 +576,7 @@ export default function FacilityModals({
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold"
                 >
-                  Save Floor Specs
+                  Save Changes
                 </button>
               </div>
             </form>
@@ -760,15 +669,15 @@ export default function FacilityModals({
                   onChange={(e) => setNewAreaType(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white font-medium cursor-pointer"
                 >
-                  <option value="receiving">📥 Inbound Receiving Bay</option>
-                  <option value="assembly">⚙️ Main Assembly Line</option>
-                  <option value="charging-bay">⚡ Charging Bay Hub</option>
-                  <option value="storage">🏗️ High-Bay Storage Racks</option>
-                  <option value="dispatch">🚚 Outbound Dispatch Docks</option>
-                  <option value="staging">📦 Staging Buffer Area</option>
-                  <option value="custom-area">🏢 Department / Work Zone</option>
-                  <option value="no-go">🛑 No-Go (Keep-Out Zone)</option>
-                  <option value="slow">⚠️ Slow Zone (Speed limit 0.4 m/s)</option>
+                  <option value="receiving">Inbound Receiving Bay</option>
+                  <option value="assembly">Main Assembly Line</option>
+                  <option value="charging-bay">Charging Bay Hub</option>
+                  <option value="storage">High-Bay Storage Racks</option>
+                  <option value="dispatch">Outbound Dispatch Docks</option>
+                  <option value="staging">Staging Buffer Area</option>
+                  <option value="custom-area">Work / Operational Zone</option>
+                  <option value="no-go">No-Go (Keep-Out Zone)</option>
+                  <option value="slow">Slow Zone (0.4 m/s limit)</option>
                 </select>
               </div>
 

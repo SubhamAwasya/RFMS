@@ -12,7 +12,6 @@ import {
   Layers,
   ShieldAlert,
   AlertTriangle,
-  ChevronRight,
 } from "lucide-react";
 
 export default function FacilityToolbox({
@@ -85,7 +84,7 @@ export default function FacilityToolbox({
 
           {/* Tooltip on Hover */}
           <span className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-            Add Station (Click to Choose Type)
+            Add Station
           </span>
         </div>
 
@@ -94,10 +93,10 @@ export default function FacilityToolbox({
             side="right"
             sideOffset={12}
             align="start"
-            className="min-w-[210px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 shadow-2xl text-xs z-50 animate-in fade-in zoom-in-95 duration-100"
+            className="min-w-[200px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 shadow-2xl text-xs z-50 animate-in fade-in zoom-in-95 duration-100"
           >
             <DropdownMenu.Label className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Station Type to Place
+              Station Type
             </DropdownMenu.Label>
 
             <DropdownMenu.Item
@@ -112,7 +111,7 @@ export default function FacilityToolbox({
               }`}
             >
               <Package className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-              <span>📦 Docking Bay (Receiving)</span>
+              <span>Docking Bay</span>
             </DropdownMenu.Item>
 
             <DropdownMenu.Item
@@ -127,7 +126,7 @@ export default function FacilityToolbox({
               }`}
             >
               <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span>⚡ Fast-Charger Pad</span>
+              <span>Fast-Charger</span>
             </DropdownMenu.Item>
 
             <DropdownMenu.Item
@@ -142,7 +141,7 @@ export default function FacilityToolbox({
               }`}
             >
               <Building2 className="w-3.5 h-3.5 text-teal-500 shrink-0" />
-              <span>🏗️ Storage Rack</span>
+              <span>Storage Rack</span>
             </DropdownMenu.Item>
 
             <DropdownMenu.Item
@@ -157,7 +156,7 @@ export default function FacilityToolbox({
               }`}
             >
               <Layers className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-              <span>🛗 Freight Elevator</span>
+              <span>Freight Elevator</span>
             </DropdownMenu.Item>
 
             <DropdownMenu.Separator className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
@@ -169,7 +168,7 @@ export default function FacilityToolbox({
               className="px-2.5 py-1.5 rounded-lg flex items-center gap-2 font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer outline-none"
             >
               <Target className="w-3.5 h-3.5 shrink-0" />
-              <span>Enter Coordinates Manually...</span>
+              <span>Manual Coordinates...</span>
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
@@ -220,7 +219,7 @@ export default function FacilityToolbox({
 
           {/* Tooltip on Hover */}
           <span className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-            Draw Area / Zone (Click to Select Type)
+            Draw Area / Zone
           </span>
         </div>
 
@@ -229,7 +228,7 @@ export default function FacilityToolbox({
             side="right"
             sideOffset={12}
             align="start"
-            className="min-w-[240px] max-h-[85vh] overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 shadow-2xl text-xs z-50 animate-in fade-in zoom-in-95 duration-100"
+            className="min-w-[220px] max-h-[85vh] overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 shadow-2xl text-xs z-50 animate-in fade-in zoom-in-95 duration-100"
           >
             <DropdownMenu.Label className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Operational Areas
@@ -246,7 +245,6 @@ export default function FacilityToolbox({
                   : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
               }`}
             >
-              <span>📥</span>
               <span>Inbound Receiving Bay</span>
             </DropdownMenu.Item>
 
@@ -261,7 +259,6 @@ export default function FacilityToolbox({
                   : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
               }`}
             >
-              <span>⚙️</span>
               <span>Main Assembly Line</span>
             </DropdownMenu.Item>
 
@@ -276,7 +273,6 @@ export default function FacilityToolbox({
                   : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
               }`}
             >
-              <span>⚡</span>
               <span>Charging Bay Hub</span>
             </DropdownMenu.Item>
 
@@ -291,7 +287,6 @@ export default function FacilityToolbox({
                   : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
               }`}
             >
-              <span>🏗️</span>
               <span>High-Bay Storage Racks</span>
             </DropdownMenu.Item>
 
@@ -306,7 +301,6 @@ export default function FacilityToolbox({
                   : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
               }`}
             >
-              <span>🚚</span>
               <span>Outbound Dispatch Docks</span>
             </DropdownMenu.Item>
 
@@ -321,7 +315,6 @@ export default function FacilityToolbox({
                   : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
               }`}
             >
-              <span>📦</span>
               <span>Staging Buffer Area</span>
             </DropdownMenu.Item>
 
@@ -336,14 +329,13 @@ export default function FacilityToolbox({
                   : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
               }`}
             >
-              <span>🏢</span>
-              <span>Department / Work Zone</span>
+              <span>Work / Operational Zone</span>
             </DropdownMenu.Item>
 
             <DropdownMenu.Separator className="h-px bg-slate-100 dark:border-slate-800 my-1" />
 
             <DropdownMenu.Label className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Safety Restricted Zones
+              Safety Zones
             </DropdownMenu.Label>
 
             <DropdownMenu.Item
@@ -358,7 +350,7 @@ export default function FacilityToolbox({
               }`}
             >
               <ShieldAlert className="w-3.5 h-3.5 text-red-500 shrink-0" />
-              <span>🛑 No-Go (Keep-Out)</span>
+              <span>No-Go Area</span>
             </DropdownMenu.Item>
 
             <DropdownMenu.Item
@@ -373,7 +365,7 @@ export default function FacilityToolbox({
               }`}
             >
               <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span>⚠️ Slow Zone (0.4 m/s limit)</span>
+              <span>Slow-Speed Zone (0.4 m/s)</span>
             </DropdownMenu.Item>
 
             <DropdownMenu.Separator className="h-px bg-slate-100 dark:border-slate-800 my-1" />
@@ -385,7 +377,7 @@ export default function FacilityToolbox({
               className="px-2.5 py-1.5 rounded-lg flex items-center gap-2 font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 cursor-pointer outline-none"
             >
               <Target className="w-3.5 h-3.5 shrink-0" />
-              <span>Enter Area Dimensions Manually...</span>
+              <span>Manual Area Dimensions...</span>
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
@@ -412,7 +404,7 @@ export default function FacilityToolbox({
 
         {/* Tooltip on Hover */}
         <span className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-          Delete Tool (Click item to remove)
+          Delete Tool
         </span>
       </div>
 
@@ -435,7 +427,7 @@ export default function FacilityToolbox({
 
         {/* Tooltip on Hover */}
         <span className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-          Enter Coordinates Manually
+          Manual Coordinates
         </span>
       </div>
     </div>

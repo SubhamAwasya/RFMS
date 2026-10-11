@@ -4,7 +4,6 @@ import LiveMapCanvas from "../components/map/LiveMapCanvas";
 import AgvControlSidePanel from "../components/map/AgvControlSidePanel";
 import { useFleet } from "../context/FleetContext";
 import { useNavigation } from "../context/NavigationContext";
-import { VIEWS, NAVIGATION_MODE } from "../constants";
 
 export default function LiveMapView({
   agvs: propAgvs,
@@ -27,7 +26,23 @@ export default function LiveMapView({
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [selectedAgvId, setSelectedAgvId] = useState(null);
+  const [selectedAgvId, setSelectedAgvId] = useState(
+    navCtx?.mapSelectedAgvId || null
+  );
+
+  // Synchronize when navigating from external views with a designated AGV
+  useEffect(() => {
+    if (navCtx?.mapSelectedAgvId !== undefined) {
+      setSelectedAgvId(navCtx.mapSelectedAgvId);
+    }
+  }, [navCtx?.mapSelectedAgvId]);
+
+  const handleSelectAgv = (id) => {
+    setSelectedAgvId(id);
+    if (navCtx?.setMapSelectedAgvId) {
+      navCtx.setMapSelectedAgvId(id);
+    }
+  };
 
   const viewportRef = useRef(null);
   const dragStartRef = useRef({
@@ -69,7 +84,7 @@ export default function LiveMapView({
         setLayers((l) => ({ ...l, showPaths: next }));
         return next;
       });
-      setSelectedAgvId(null);
+      handleSelectAgv(null);
       return;
     }
     if (layerId === "agvs") {
@@ -78,21 +93,12 @@ export default function LiveMapView({
     }
   };
 
-  const handleToggleAllPaths = () => {
-    setShowAllPaths((prev) => {
-      const next = !prev;
-      setLayers((l) => ({ ...l, showPaths: next }));
-      return next;
-    });
-    setSelectedAgvId(null);
-  };
-
   const handleCanvasClick = () => {
     if (dragStartRef.current?.hasDragged) {
       dragStartRef.current.hasDragged = false;
       return;
     }
-    setSelectedAgvId(null);
+    handleSelectAgv(null);
   };
 
   const selectedAgv = agvs.find((a) => a.id === selectedAgvId);
@@ -232,28 +238,6 @@ export default function LiveMapView({
     }
   }, [fleetCtx]);
 
-  const isDriving = Boolean(
-    fleetCtx?.navigationMode === NAVIGATION_MODE.MANUAL ||
-    fleetCtx?.teleopOpen ||
-    agvs.some((a) => a.status === "Manual Teleop")
-  );
-  const targetAgvToDrive =
-    selectedAgv ||
-    agvs.find((a) => a.id === fleetCtx?.drivingAgvId) ||
-    forklift ||
-    agvs[0];
-  const driveRobotLabel = targetAgvToDrive ? targetAgvToDrive.id : "AGV";
-
-  const handleSelectMode = (mode) => {
-    if (mode === NAVIGATION_MODE.AUTONOMOUS) {
-      fleetCtx?.handBackToAutopilot?.(selectedAgvId);
-    } else {
-      const idToDrive = selectedAgvId || targetAgvToDrive?.id;
-      fleetCtx?.takeManualControl?.(idToDrive);
-      if (idToDrive) setSelectedAgvId(idToDrive);
-    }
-  };
-
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 select-none overflow-hidden relative transition-colors duration-150">
       <LiveMapHeader
@@ -290,7 +274,7 @@ export default function LiveMapView({
           layers={layers}
           toggleLayer={toggleLayer}
           selectedAgv={selectedAgv}
-          setSelectedAgvId={setSelectedAgvId}
+          setSelectedAgvId={handleSelectAgv}
           onSelectAgv={onSelectAgv}
           activeFloor={activeFloor}
           forklift={forklift}
@@ -305,7 +289,7 @@ export default function LiveMapView({
         {selectedAgv && (
           <AgvControlSidePanel
             agv={selectedAgv}
-            onClose={() => setSelectedAgvId(null)}
+            onClose={() => handleSelectAgv(null)}
             onSelectAgv={onSelectAgv}
           />
         )}

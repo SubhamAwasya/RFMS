@@ -6,7 +6,7 @@ import { getRobotColorTheme } from "../../constants";
  * Renders all robots in the fleet as detailed, realistic industrial Forklift AGVs
  * with dynamic color coding corresponding to each robot's theme.
  */
-export default function AgvVehicleMarker({
+function AgvVehicleMarker({
   robot,
   isSelected,
   onSelect,
@@ -37,7 +37,11 @@ export default function AgvVehicleMarker({
     <g
       id={`agv-marker-${robot.id}`}
       transform={`translate(${posX}, ${posY})`}
-      className="cursor-pointer group select-none transition-transform duration-150"
+      style={{
+        transition: "transform 60ms linear",
+        willChange: "transform",
+      }}
+      className="cursor-pointer group select-none"
       onClick={(e) => {
         e.stopPropagation();
         onSelect?.(robot.id);
@@ -256,9 +260,11 @@ export default function AgvVehicleMarker({
               : "fill-slate-900 dark:fill-white font-bold"
           } text-[10px] tracking-tight`}
         >
-          {robot.id} • {robot.status} (⚡{Math.round(robot.battery ?? 100)}%)
+          {robot.id} • {robot.status} ({Math.round(robot.battery ?? 100)}%)
         </text>
       </g>
     </g>
   );
 }
+
+export default React.memo(AgvVehicleMarker);

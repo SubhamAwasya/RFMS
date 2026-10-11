@@ -26,12 +26,8 @@ export default function UsersView() {
     <div className="flex-1 flex flex-col h-full overflow-y-auto p-4 sm:p-6 space-y-5">
       <div className="pb-3 border-b border-slate-200 dark:border-slate-800">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-          User Access Management
+          Users
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Role-based operator security privileges and handheld console
-          credentials
-        </p>
       </div>
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">

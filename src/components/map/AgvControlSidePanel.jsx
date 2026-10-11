@@ -12,13 +12,11 @@ import {
   Octagon,
   Battery,
   ShieldAlert,
-  ShieldCheck,
   Zap,
   Play,
   Repeat,
   Radio,
   MapPin,
-  Layers,
   Truck,
 } from "lucide-react";
 import { useFleet } from "../../context/FleetContext";

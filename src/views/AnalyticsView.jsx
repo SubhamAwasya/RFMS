@@ -7,9 +7,6 @@ export default function AnalyticsView() {
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">
           Fleet Analytics
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          OEE metrics, kinematic speed distributions, and energy throughput
-        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -21,7 +18,7 @@ export default function AnalyticsView() {
         <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
           <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Average Cycle Time</div>
           <div className="text-3xl font-bold text-slate-900 dark:text-white my-1.5">6.2 min</div>
-          <div className="text-xs text-blue-600 dark:text-blue-400 font-semibold">-45s benchmark</div>
+          <div className="text-xs text-blue-600 dark:text-blue-400 font-semibold">-45s vs benchmark</div>
         </div>
         <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
           <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Tonnage Moved</div>
@@ -31,7 +28,7 @@ export default function AnalyticsView() {
         <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
           <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Mean Time Between Failures</div>
           <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 my-1.5">1,420 h</div>
-          <div className="text-xs text-slate-400">Zero critical collisions</div>
+          <div className="text-xs text-slate-400">0 critical incidents</div>
         </div>
       </div>
 

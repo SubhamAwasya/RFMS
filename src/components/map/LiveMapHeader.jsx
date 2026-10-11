@@ -11,7 +11,6 @@ export default function LiveMapHeader({
   onSelectFloor,
   agvCount,
 }) {
-  const currentBuilding = (buildings || []).find((b) => b.id === activeBuildingId) || buildings?.[0];
   const buildingFloors = (floors || []).filter((f) => f.buildingId === activeBuildingId);
 
   return (
@@ -54,7 +53,7 @@ export default function LiveMapHeader({
             value={activeFloorId || ""}
             onChange={(e) => onSelectFloor?.(e.target.value)}
             className="bg-transparent text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer font-medium text-xs pr-1 max-w-[130px] sm:max-w-[180px] md:max-w-[220px] truncate"
-            title="Select Floor Level"
+            title="Select Floor"
           >
             {buildingFloors.length > 0 ? (
               buildingFloors.map((f) => (

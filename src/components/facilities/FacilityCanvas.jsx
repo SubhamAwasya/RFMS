@@ -66,19 +66,17 @@ export default function FacilityCanvas({
         />
         <span className="font-semibold text-slate-800 dark:text-slate-200">
           {activeTool === "pan"
-            ? "Inspect Mode"
+            ? "Inspect"
             : activeTool === "station"
-            ? "Click Map to Place"
+            ? "Station"
             : activeTool === "draw-zone"
-            ? "Drag to Draw Zone"
-            : "Delete Tool Active"}
+            ? "Zone"
+            : "Delete"}
         </span>
         <span className="text-slate-300 dark:text-slate-700">|</span>
         <span>
           X: {cursorCoords.meterX}m, Y: {cursorCoords.meterY}m
         </span>
-        <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-        <span className="text-slate-400 hidden sm:inline">1m / cell</span>
       </div>
 
       {/* Dedicated Vertical CAD Toolbox Floating Component */}
@@ -215,7 +213,7 @@ export default function FacilityCanvas({
                     fontWeight="bold"
                     letterSpacing="0.5"
                   >
-                    {config.icon} {(zone.name || "AREA").toUpperCase()}
+                    {(zone.name || "AREA").toUpperCase()}
                   </text>
 
                   {/* Physical Dimensions Readout in bottom-right if area is wide enough */}
@@ -288,7 +286,7 @@ export default function FacilityCanvas({
                       fontSize="10"
                       fontWeight="bold"
                     >
-                      {config.icon} {pxToMeters(currentDrawZone.w)}m × {pxToMeters(currentDrawZone.h)}m
+                      {pxToMeters(currentDrawZone.w)}m × {pxToMeters(currentDrawZone.h)}m
                     </text>
                   </>
                 );

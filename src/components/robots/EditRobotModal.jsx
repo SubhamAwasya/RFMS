@@ -3,15 +3,10 @@ import * as Dialog from "@radix-ui/react-dialog";
 import {
   Bot,
   Building2,
-  Layers,
   Save,
   Trash2,
   Lock,
-  Battery,
-  Gauge,
-  Package,
   MapPin,
-  Activity,
   X,
 } from "lucide-react";
 import { useFleet } from "../../context/FleetContext";
@@ -38,9 +33,6 @@ export default function EditRobotModal({
   const [floorId, setFloorId] = useState("floor-g");
   const [location, setLocation] = useState("");
   const [status, setStatus] = useState("Idle");
-  const [battery, setBattery] = useState(100);
-  const [speed, setSpeed] = useState(1.2);
-  const [payload, setPayload] = useState("0 kg");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Sync form state when robot changes
@@ -52,9 +44,6 @@ export default function EditRobotModal({
       setFloorId(robot.floorId || fleetCtx?.activeFloorId || "floor-g");
       setLocation(robot.location || "");
       setStatus(robot.status || "Idle");
-      setBattery(typeof robot.battery === "number" ? robot.battery : 100);
-      setSpeed(typeof robot.speed === "number" ? robot.speed : 1.2);
-      setPayload(robot.payload || "0 kg");
       setShowDeleteConfirm(false);
     }
   }, [robot, isOpen, fleetCtx?.activeBuildingId, fleetCtx?.activeFloorId]);
@@ -82,9 +71,6 @@ export default function EditRobotModal({
       floorId,
       location: resolvedLocation,
       status,
-      battery: Math.min(100, Math.max(0, Number(battery))),
-      speed: Number(speed),
-      payload,
     };
 
     if (onSave) {
@@ -119,7 +105,7 @@ export default function EditRobotModal({
                   </span>
                 </Dialog.Title>
                 <Dialog.Description className="text-xs text-slate-500 dark:text-slate-400">
-                  Update hardware telemetry profile, floor assignment, and operating status.
+                  Update vehicle assignment, staging location, and operational state.
                 </Dialog.Description>
               </div>
             </div>
@@ -272,57 +258,6 @@ export default function EditRobotModal({
                   />
                   <MapPin className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                 </div>
-              </div>
-            </div>
-
-            {/* Telemetry & Specifications */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <Battery className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Battery</span>
-                  </span>
-                  <span className="font-mono text-slate-500">{battery}%</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={battery}
-                  onChange={(e) => setBattery(Number(e.target.value))}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:outline-none font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                  <Gauge className="w-3.5 h-3.5 text-blue-500" />
-                  <span>Max Speed (m/s)</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.0"
-                  max="3.0"
-                  value={speed}
-                  onChange={(e) => setSpeed(Number(e.target.value))}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:outline-none font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                  <Package className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Payload Rating</span>
-                </label>
-                <input
-                  type="text"
-                  value={payload}
-                  onChange={(e) => setPayload(e.target.value)}
-                  placeholder="e.g. 1200 kg"
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:outline-none"
-                />
               </div>
             </div>
 

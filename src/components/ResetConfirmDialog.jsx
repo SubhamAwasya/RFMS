@@ -23,9 +23,9 @@ export default function ResetConfirmDialog() {
                 Reset All Custom Data?
               </Dialog.Title>
               <Dialog.Description className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
-                This will clear all your created buildings, custom floor blueprints, added stations, safety zones, and custom routes from local storage.
+                This will clear custom buildings, blueprints, stations, zones, and routes from local storage.
                 <br /><br />
-                The system will return to the clean **single-entity baseline** (FL-01 Forklift AGV, Building A, Ground Floor).
+                The system will be restored to the default configuration.
               </Dialog.Description>
             </div>
 

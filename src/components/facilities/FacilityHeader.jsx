@@ -7,7 +7,6 @@ import {
   Plus,
   Check,
   ChevronDown,
-  Info,
   ListFilter,
   Sliders,
   ImageOff,
@@ -121,7 +120,7 @@ export default function FacilityHeader({
           <DropdownMenu.Trigger asChild>
             <button className="h-8 flex items-center gap-1.5 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 transition-colors focus:outline-none whitespace-nowrap">
               <Layers className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              <span className="truncate max-w-[110px] sm:max-w-[150px]">
+              <span className="truncate max-w-[130px] sm:max-w-[180px]">
                 {currentFloor?.name || "Floor"}
               </span>
               <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
@@ -131,10 +130,10 @@ export default function FacilityHeader({
             <DropdownMenu.Content
               align="start"
               sideOffset={6}
-              className="min-w-[220px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 shadow-xl text-xs z-50 animate-in fade-in zoom-in-95 duration-100"
+              className="min-w-[210px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 shadow-xl text-xs z-50 animate-in fade-in zoom-in-95 duration-100"
             >
               <DropdownMenu.Label className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Floor Levels ({selectedBuilding?.name || "Building"})
+                Select Floor
               </DropdownMenu.Label>
               {buildingFloors.map((f) => (
                 <DropdownMenu.Item
@@ -164,7 +163,7 @@ export default function FacilityHeader({
                 className="px-2.5 py-1.5 rounded-lg flex items-center gap-2 font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer outline-none"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>New Floor Level...</span>
+                <span>New Floor...</span>
               </DropdownMenu.Item>
               {currentFloor && currentFloor.buildingId === activeBuildingId && (
                 <>
@@ -173,7 +172,7 @@ export default function FacilityHeader({
                     className="px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer outline-none"
                   >
                     <Pencil className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Edit Floor Specs...</span>
+                    <span>Edit Current Floor...</span>
                   </DropdownMenu.Item>
                   <DropdownMenu.Item
                     onClick={() => setShowDeleteFloorModal?.(true)}
@@ -184,13 +183,6 @@ export default function FacilityHeader({
                   </DropdownMenu.Item>
                 </>
               )}
-              <DropdownMenu.Item
-                onClick={() => setShowFloorSpecsModal?.(true)}
-                className="px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer outline-none"
-              >
-                <Info className="w-3.5 h-3.5 text-slate-400" />
-                <span>Floor Dimensions & Specs</span>
-              </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>

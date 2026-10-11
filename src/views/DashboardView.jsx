@@ -26,7 +26,6 @@ export default function DashboardView({
   } catch (e) {}
 
   const agvs = propAgvs ?? fleetCtx?.agvs ?? [];
-  const missions = propMissions ?? fleetCtx?.missions ?? [];
   const alerts = propAlerts ?? fleetCtx?.alerts ?? [];
   const maintenance = propMaintenance ?? fleetCtx?.maintenance ?? [];
   const onNavigate = propOnNavigate ?? navCtx?.navigateTo;
@@ -197,7 +196,17 @@ export default function DashboardView({
             {agvs.slice(0, 3).map((agv) => (
               <div
                 key={agv.id}
-                onClick={() => onNavigate?.(VIEWS.MAP)}
+                onClick={() => {
+                  const targetFloor = (fleetCtx?.floors || []).find((f) => f?.id === agv?.floorId);
+                  const targetBuildingId = agv?.buildingId || targetFloor?.buildingId;
+                  if (targetBuildingId && fleetCtx?.setActiveBuildingId) {
+                    fleetCtx.setActiveBuildingId(targetBuildingId);
+                  }
+                  if (agv?.floorId && fleetCtx?.setActiveFloorId) {
+                    fleetCtx.setActiveFloorId(agv.floorId);
+                  }
+                  onNavigate?.(VIEWS.MAP, { agvId: agv.id });
+                }}
                 className="p-3.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 cursor-pointer transition-colors flex items-center justify-between"
               >
                 <div>

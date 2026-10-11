@@ -1,6 +1,5 @@
 import React from "react";
-import * as Switch from "@radix-ui/react-switch";
-import { Sun, Moon, Check, RotateCcw } from "lucide-react";
+import { Sun, Moon, Check } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useFleet } from "../context/FleetContext";
 
@@ -24,26 +23,20 @@ export default function SettingsView({
     <div className="flex-1 flex flex-col h-full overflow-y-auto p-4 sm:p-6 space-y-5 max-w-3xl">
       <div className="pb-3 border-b border-slate-200 dark:border-slate-800">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-          System Settings
+          Settings
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Configure RFMS runtime parameters, ROS2 bridge endpoints, and user appearance preferences
-        </p>
       </div>
 
       <div className="space-y-4">
-        {/* Modern Gray Theme Selector Card */}
+        {/* Theme Selector Card */}
         <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <span>Appearance Theme</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-                  Modern Gray Edition
-                </span>
+              <div className="text-sm font-bold text-slate-900 dark:text-white">
+                Appearance Theme
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Precision-engineered graphite & obsidian tones for dark mode, paired with clean architectural neutral surfaces for light mode.
+                Select dark or light interface theme.
               </div>
             </div>
           </div>
@@ -70,9 +63,9 @@ export default function SettingsView({
                   </span>
                 )}
               </div>
-              <div className="text-sm font-bold text-white">Modern Gray Dark</div>
+              <div className="text-sm font-bold text-white">Dark Theme</div>
               <div className="text-xs text-slate-400 mt-0.5">
-                Obsidian #0c0d10 base with slate #1a1c23 cards
+                Low-glare dark palette
               </div>
             </button>
 
@@ -96,82 +89,31 @@ export default function SettingsView({
                   </span>
                 )}
               </div>
-              <div className="text-sm font-bold text-slate-900 dark:text-white">Clean Architectural Light</div>
+              <div className="text-sm font-bold text-slate-900 dark:text-white">Light Theme</div>
               <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Crisp slate #f8fafc with balanced neutral-800 text
+                Clean light palette
               </div>
             </button>
           </div>
         </div>
 
-        {/* ROS2 & Connectivity */}
-        <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm space-y-4 text-xs">
-          <div className="text-sm font-bold text-slate-900 dark:text-white">
-            ROS2 Middleware Bridge
-          </div>
-          <div className="space-y-3">
-            <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Zenoh / CycloneDDS Domain ID
-              </label>
-              <input
-                type="number"
-                defaultValue={42}
-                className="w-full max-w-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Telemetry Push Interval
-              </label>
-              <select className="w-full max-w-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none">
-                <option>50 ms (20 Hz - High Precision)</option>
-                <option>100 ms (10 Hz - Standard)</option>
-                <option>250 ms (4 Hz - Low Bandwidth)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Safety Interlocks */}
-        <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm space-y-3 text-xs">
-          <div className="text-sm font-bold text-slate-900 dark:text-white">
-            Safety Interlocks
-          </div>
-          <div className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-            <div>
-              <div className="font-semibold text-slate-800 dark:text-slate-200">
-                Automatic Emergency E-Stop on LiDAR Blindspot
-              </div>
-              <div className="text-slate-400 text-[11px]">
-                Halts rover if LiDAR returns invalid point clouds for &gt; 250ms
-              </div>
-            </div>
-            <Switch.Root
-              defaultChecked
-              className="w-10 h-5 bg-slate-300 dark:bg-slate-700 rounded-full relative data-[state=checked]:bg-blue-600 outline-none cursor-pointer"
-            >
-              <Switch.Thumb className="block w-4 h-4 bg-white rounded-full transition-transform duration-100 translate-x-0.5 will-change-transform data-[state=checked]:translate-x-[22px]" />
-            </Switch.Root>
-          </div>
-        </div>
 
         {/* Data Persistence & Factory Reset */}
         <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm space-y-3 text-xs">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm font-bold text-slate-900 dark:text-white">
-                Data Persistence & Factory Reset
+                Data & Storage
               </div>
               <div className="text-slate-500 dark:text-slate-400 text-xs mt-1">
-                Your custom buildings, uploaded blueprints, placed stations, and navigation paths are automatically persisted in local storage.
+                Custom buildings, blueprints, stations, and routes are stored locally.
               </div>
             </div>
           </div>
 
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <span className="text-[11px] text-slate-400">
-              Want to start over with a clean single-entity baseline?
+              Restore default configuration and sample data.
             </span>
             <button
               type="button"

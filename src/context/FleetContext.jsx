@@ -4,16 +4,11 @@ import React, {
   useState,
   useCallback,
   useEffect,
-  useRef,
   useMemo,
 } from "react";
 import {
-  INITIAL_AGVS,
   INITIAL_FORKLIFT_AGV,
   INITIAL_OTHER_AGVS,
-  INITIAL_FLATBED_AGV,
-  INITIAL_MISSIONS,
-  INITIAL_SCHEDULES,
   INITIAL_MAINTENANCE,
   INITIAL_ALERTS,
   INITIAL_BUILDINGS,
@@ -27,9 +22,7 @@ import {
 } from "../data/mockData";
 import {
   DEFAULT_FLOOR_PATHS,
-  ROBOT_PATHS,
   getRobotPath,
-  getRobotColorTheme,
   NAVIGATION_MODE,
   AGV_STATUS,
 } from "../constants";
@@ -125,8 +118,32 @@ export function FleetProvider({ children }) {
   useEffect(() => { saveStorage("rfms_floors", floors); }, [floors]);
   useEffect(() => { saveStorage("rfms_active_building_id", activeBuildingId); }, [activeBuildingId]);
   useEffect(() => { saveStorage("rfms_active_floor_id", activeFloorId); }, [activeFloorId]);
-  useEffect(() => { saveStorage("rfms_forklift", forklift); }, [forklift]);
-  useEffect(() => { saveStorage("rfms_other_agvs", otherAgvs); }, [otherAgvs]);
+
+  // Debounce high-frequency vehicle telemetry saves to prevent blocking the main UI thread
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveStorage("rfms_forklift", forklift);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [forklift]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveStorage("rfms_other_agvs", otherAgvs);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [otherAgvs]);
+
+  // Flush vehicle states immediately when window unloads
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (forklift) saveStorage("rfms_forklift", forklift);
+      if (otherAgvs) saveStorage("rfms_other_agvs", otherAgvs);
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [forklift, otherAgvs]);
+
   useEffect(() => { saveStorage("rfms_nav_mode", navigationMode); }, [navigationMode]);
   useEffect(() => { saveStorage("rfms_maintenance", maintenance); }, [maintenance]);
   useEffect(() => { saveStorage("rfms_alerts", alerts); }, [alerts]);
@@ -468,42 +485,6 @@ export function FleetProvider({ children }) {
       return prev;
     });
   }, [addBlackboxLog, activeRoute.length]);
-
-  // Dispatch Mission to Forklift
-  const dispatchMissionToForklift = useCallback((missionData, waypointsList) => {
-    const newMission = {
-      id: missionData.id || `M-FL-${Math.floor(Math.random() * 900) + 100}`,
-      name: missionData.name || "Pallet Relocation Route",
-      type: missionData.type || "Transport",
-      priority: missionData.priority || "High",
-      assignedAgv: "FL-01",
-      status: "In Progress",
-      startTime: "Just now",
-      pickup: missionData.pickup || "Docking Bay 01",
-      dropoff: missionData.dropoff || "High-Bay Rack 03",
-      estTime: missionData.estTime || "5 min",
-      waypointCount: waypointsList.length,
-    };
-
-    setMissions((prev) => [newMission, ...prev]);
-    setActiveRoute(waypointsList);
-    setCurrentWaypointIdx(0);
-
-    setForklift((prev) => ({
-      ...prev,
-      status: "In Mission",
-      speed: 1.2,
-      activeMissionId: newMission.id,
-      currentMission: newMission.name,
-      targetWaypointIndex: 0,
-    }));
-
-    addBlackboxLog(
-      "ACTION",
-      `Mission dispatched: ${newMission.name}`,
-      `${waypointsList.length} waypoints plotted from ${newMission.pickup} to ${newMission.dropoff}`
-    );
-  }, [addBlackboxLog]);
 
   // Send AGV to Charger Pad
   const sendToCharger = useCallback(() => {
@@ -985,67 +966,6 @@ export function FleetProvider({ children }) {
     setAlerts([]);
   }, []);
 
-  const createMission = useCallback((newMission) => {
-    setMissions((prev) => [newMission, ...prev]);
-  }, []);
-
-  const updateMission = useCallback((missionId, updatedFields) => {
-    setMissions((prev) =>
-      prev.map((m) => {
-        if (m.id !== missionId) return m;
-        return { ...m, ...updatedFields };
-      })
-    );
-
-    setForklift((prev) => {
-      if (!prev) return null;
-      if (prev.activeMissionId === missionId) {
-        return {
-          ...prev,
-          currentMission: updatedFields.name || prev.currentMission,
-          status:
-            updatedFields.status === "Completed" || updatedFields.status === "Failed"
-              ? "Idle"
-              : updatedFields.status === "In Progress"
-              ? "In Mission"
-              : prev.status,
-        };
-      }
-      return prev;
-    });
-
-    addBlackboxLog("ACTION", `Mission ${missionId} updated`);
-  }, [addBlackboxLog]);
-
-  const cancelMission = useCallback((id) => {
-    setMissions((prev) => prev.filter((m) => m.id !== id));
-    if (forklift && forklift.activeMissionId === id) {
-      setActiveRoute([]);
-      setForklift((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: "Idle",
-              speed: 0.0,
-              activeMissionId: null,
-              currentMission: "Awaiting Dispatch",
-            }
-          : null
-      );
-      addBlackboxLog("WARN", `Mission ${id} canceled by operator`);
-    }
-  }, [forklift?.activeMissionId, addBlackboxLog]);
-
-  const toggleSchedule = useCallback((id) => {
-    setSchedules((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status: !s.status } : s))
-    );
-  }, []);
-
-  const addSchedule = useCallback((newSch) => {
-    setSchedules((prev) => [newSch, ...prev]);
-  }, []);
-
   // Factory Reset All Data to Single-Entity Baseline
   const resetAllData = useCallback(() => {
     try {
@@ -1160,54 +1080,45 @@ export function FleetProvider({ children }) {
 
   // --------------------------------------------------------------------------
   // CONTINUOUS REAL-TIME CLIENT SIMULATION LOOP
-  // Runs every 250ms to animate FL-01 motion, battery, fork height, obstacles
+  // Runs at 50ms (20 FPS) with smooth angular interpolation and fine stepping
   // --------------------------------------------------------------------------
   useEffect(() => {
     const interval = setInterval(() => {
-      // 1. If E-Stopped or Manual Teleop, do not perform autonomous route updates
+      // 1. If E-Stopped, do not perform autonomous route updates
       if (isEStopped) return;
 
-      // 2. Battery Charging Simulation
+      // 2. Continuous Autonomous Looping & Telemetry for Forklift (FL-01)
       setForklift((prev) => {
         if (!prev) return null;
-        if (prev.status === "Charging") {
-          if (prev.battery < 100) {
-            const nextBat = Math.min(100, Number((prev.battery + 0.6).toFixed(1)));
-            return { ...prev, battery: nextBat };
-          }
-        }
-        return prev;
-      });
 
-      // 3. Fork Mechanism Height Animation
-      setForklift((prev) => {
-        if (!prev || !prev.fork) return prev;
-        const { heightMeters, targetHeightMeters } = prev.fork;
-        if (Math.abs(heightMeters - targetHeightMeters) > 0.04) {
-          const step = heightMeters < targetHeightMeters ? 0.08 : -0.08;
-          const nextH = Math.max(
-            0.0,
-            Math.min(2.8, Number((heightMeters + step).toFixed(2)))
-          );
-          return {
-            ...prev,
-            fork: { ...prev.fork, heightMeters: nextH },
-          };
+        // Battery Charging Simulation
+        let nextBattery = prev.battery;
+        if (prev.status === "Charging" && prev.battery < 100) {
+          nextBattery = Math.min(100, Number((prev.battery + 0.1).toFixed(2)));
         }
-        return prev;
-      });
 
-      // 4. Autonomous Looping Waypoint Navigation for Forklift (FL-01)
-      setForklift((prev) => {
-        if (!prev || !prev.position) return null;
+        // Fork Mechanism Height Animation
+        let nextFork = prev.fork;
+        if (prev.fork && Math.abs(prev.fork.heightMeters - prev.fork.targetHeightMeters) > 0.02) {
+          const step = prev.fork.heightMeters < prev.fork.targetHeightMeters ? 0.02 : -0.02;
+          const nextH = Math.max(0.0, Math.min(2.8, Number((prev.fork.heightMeters + step).toFixed(2))));
+          nextFork = { ...prev.fork, heightMeters: nextH };
+        }
+
+        // If manual teleop, stopped, charging, or obstacle blocked, keep position unchanged
         if (
+          !prev.position ||
           prev.status === AGV_STATUS.MANUAL_TELEOP ||
           prev.status === "Stopped" ||
           prev.status === "Charging" ||
           prev.status === AGV_STATUS.BLOCKED
         ) {
+          if (nextBattery !== prev.battery || nextFork !== prev.fork) {
+            return { ...prev, battery: nextBattery, fork: nextFork };
+          }
           return prev;
         }
+
         const route = getRobotPath(prev.id || "FL-01", prev.floorId || activeFloorId);
         if (!route || route.length === 0) return prev;
 
@@ -1241,6 +1152,8 @@ export function FleetProvider({ children }) {
             ]);
             return {
               ...prev,
+              battery: nextBattery,
+              fork: nextFork,
               status: AGV_STATUS.BLOCKED,
               speed: 0.0,
               proximityRadar: {
@@ -1262,23 +1175,33 @@ export function FleetProvider({ children }) {
         );
 
         const activeSpeed = inSlowZone ? 0.4 : (prev.speed || 1.2);
-        const stepDist = activeSpeed * 6.5; // pixel step
+        const stepDist = activeSpeed * 1.3; // 50ms tick step (~1.56px at 1.2 m/s)
 
         const dx = tx - cx;
         const dy = ty - cy;
         const distToTarget = Math.hypot(dx, dy);
 
-        // Compute smooth heading angle
+        // Compute smooth target heading towards waypoint
         let targetHeading = (Math.atan2(dy, dx) * 180) / Math.PI;
         if (targetHeading < 0) targetHeading += 360;
 
+        // Smooth heading angular interpolation (steers smoothly without snapping)
+        const currentHeading = prev.position?.headingDeg ?? prev.heading ?? targetHeading;
+        let angleDiff = ((targetHeading - currentHeading + 540) % 360) - 180;
+        const maxTurnPerTick = 6; // 6 deg / 50ms = 120 deg/sec smooth steering
+        let smoothHeading = currentHeading;
+        if (Math.abs(angleDiff) <= maxTurnPerTick) {
+          smoothHeading = targetHeading;
+        } else {
+          smoothHeading = (currentHeading + Math.sign(angleDiff) * maxTurnPerTick + 360) % 360;
+        }
+        smoothHeading = Number(smoothHeading.toFixed(1));
+
         // Check if arrived at this waypoint
-        if (distToTarget <= stepDist + 4) {
-          // Endless continuous loop: wrap around to 0 when reaching end!
+        if (distToTarget <= stepDist + 2) {
           const nextIdx = (safeIdx + 1) % route.length;
           setCurrentWaypointIdx(nextIdx);
 
-          // Handle waypoint pallet action if applicable
           let nextCargo = prev.cargo;
           let nextPayload = prev.payload;
 
@@ -1309,40 +1232,42 @@ export function FleetProvider({ children }) {
 
           return {
             ...prev,
-            position: { x: tx, y: ty, headingDeg: Math.round(targetHeading) },
-            coordinates: { x: tx, y: ty },
-            heading: Math.round(targetHeading),
+            position: { x: target.x, y: target.y, headingDeg: smoothHeading },
+            coordinates: { x: target.x, y: target.y },
+            heading: smoothHeading,
             speed: activeSpeed,
             status: AGV_STATUS.AUTO_LOOP,
             currentMission: `Continuous Looping Path: → ${route[nextIdx]?.label || "Next WP"}`,
             cargo: nextCargo,
             payload: nextPayload,
             targetWaypointIndex: nextIdx,
+            fork: nextFork,
+            battery: nextBattery,
           };
         }
 
-        // Interpolate position forward
+        // Interpolate position forward along corridor
         const angleRad = (targetHeading * Math.PI) / 180;
-        const nextX = Number((cx + Math.cos(angleRad) * stepDist).toFixed(1));
-        const nextY = Number((cy + Math.sin(angleRad) * stepDist).toFixed(1));
+        const nextX = Number((cx + Math.cos(angleRad) * stepDist).toFixed(2));
+        const nextY = Number((cy + Math.sin(angleRad) * stepDist).toFixed(2));
 
         // Battery drain proportional to speed and cargo
-        const drain = prev.cargo ? 0.04 : 0.02;
-        const nextBat = Math.max(0, Number((prev.battery - drain).toFixed(2)));
+        const drain = prev.cargo ? 0.008 : 0.004;
+        const nextBat = Math.max(0, Number((nextBattery - drain).toFixed(2)));
 
         return {
           ...prev,
-          position: { x: nextX, y: nextY, headingDeg: Math.round(targetHeading) },
+          position: { x: nextX, y: nextY, headingDeg: smoothHeading },
           coordinates: { x: nextX, y: nextY },
-          heading: Math.round(targetHeading),
+          heading: smoothHeading,
           speed: activeSpeed,
           status: AGV_STATUS.AUTO_LOOP,
           battery: nextBat,
+          fork: nextFork,
         };
       });
 
-      // 5. Autonomous Looping Waypoint Navigation for ALL other robots in fleet (FL-02, FL-03)
-      // Keeps moving continuously along designated loop path concurrently!
+      // 3. Autonomous Looping Waypoint Navigation for ALL other robots in fleet
       setOtherAgvs((prev) => {
         if (!prev || prev.length === 0) return prev;
         return prev.map((agv) => {
@@ -1366,18 +1291,32 @@ export function FleetProvider({ children }) {
           const adx = target.x - acx;
           const ady = target.y - acy;
           const adist = Math.hypot(adx, ady);
-          let aHeading = (Math.atan2(ady, adx) * 180) / Math.PI;
-          if (aHeading < 0) aHeading += 360;
-          const aSpeed = agv.speed || 1.2;
-          const aStep = aSpeed * 6.5;
 
-          if (adist <= aStep + 4) {
+          let aTargetHeading = (Math.atan2(ady, adx) * 180) / Math.PI;
+          if (aTargetHeading < 0) aTargetHeading += 360;
+
+          // Smooth heading angular interpolation
+          const currentAHeading = agv.position?.headingDeg ?? agv.heading ?? aTargetHeading;
+          let aDiff = ((aTargetHeading - currentAHeading + 540) % 360) - 180;
+          const aMaxTurn = 6;
+          let smoothAHeading = currentAHeading;
+          if (Math.abs(aDiff) <= aMaxTurn) {
+            smoothAHeading = aTargetHeading;
+          } else {
+            smoothAHeading = (currentAHeading + Math.sign(aDiff) * aMaxTurn + 360) % 360;
+          }
+          smoothAHeading = Number(smoothAHeading.toFixed(1));
+
+          const aSpeed = agv.speed || 1.2;
+          const aStep = aSpeed * 1.3; // 50ms tick step
+
+          if (adist <= aStep + 2) {
             const nextIdx = (safeIdx + 1) % route.length;
             return {
               ...agv,
-              position: { x: target.x, y: target.y, headingDeg: Math.round(aHeading) },
+              position: { x: target.x, y: target.y, headingDeg: smoothAHeading },
               coordinates: { x: target.x, y: target.y },
-              heading: Math.round(aHeading),
+              heading: smoothAHeading,
               speed: aSpeed,
               status: AGV_STATUS.AUTO_LOOP,
               currentMission: `Continuous Looping Path: → ${route[nextIdx]?.label || "Next WP"}`,
@@ -1385,23 +1324,23 @@ export function FleetProvider({ children }) {
             };
           }
 
-          const aAngleRad = (aHeading * Math.PI) / 180;
-          const anx = Number((acx + Math.cos(aAngleRad) * aStep).toFixed(1));
-          const any = Number((acy + Math.sin(aAngleRad) * aStep).toFixed(1));
-          const nextBat = Math.max(0, Number(((agv.battery ?? 80) - 0.02).toFixed(2)));
+          const aAngleRad = (aTargetHeading * Math.PI) / 180;
+          const anx = Number((acx + Math.cos(aAngleRad) * aStep).toFixed(2));
+          const any = Number((acy + Math.sin(aAngleRad) * aStep).toFixed(2));
+          const nextBat = Math.max(0, Number(((agv.battery ?? 80) - 0.004).toFixed(2)));
 
           return {
             ...agv,
-            position: { x: anx, y: any, headingDeg: Math.round(aHeading) },
+            position: { x: anx, y: any, headingDeg: smoothAHeading },
             coordinates: { x: anx, y: any },
-            heading: Math.round(aHeading),
+            heading: smoothAHeading,
             speed: aSpeed,
             status: AGV_STATUS.AUTO_LOOP,
             battery: nextBat,
           };
         });
       });
-    }, 250);
+    }, 50);
 
     return () => clearInterval(interval);
   }, [

@@ -3,11 +3,6 @@ import * as Dialog from "@radix-ui/react-dialog";
 import {
   Plus,
   Building2,
-  Layers,
-  Battery,
-  Gauge,
-  Package,
-  Activity,
   MapPin,
   Bot,
   X,
@@ -31,9 +26,6 @@ export default function AddRobotModal({ agvCount, onAddAgv }) {
   const [buildingId, setBuildingId] = useState(fleetCtx?.activeBuildingId || "bldg-1");
   const [floorId, setFloorId] = useState(fleetCtx?.activeFloorId || "floor-g");
   const [newLocation, setNewLocation] = useState("Inbound Staging Area");
-  const [battery, setBattery] = useState(100);
-  const [speed, setSpeed] = useState(1.2);
-  const [payload, setPayload] = useState("0 kg");
 
   const availableFloors = floors.filter(
     (f) => !buildingId || f.buildingId === buildingId
@@ -57,10 +49,10 @@ export default function AddRobotModal({ agvCount, onAddAgv }) {
         buildingId: buildingId || "bldg-1",
         floorId: floorId || "floor-g",
         status: status || "Auto-Pilot (Looping)",
-        battery: Math.min(100, Math.max(0, Number(battery))),
-        speed: Number(speed),
-        cruiseSpeed: Number(speed),
-        payload: payload.trim() || (newType === "Flatbed Payload Carrier AGV" ? "1,200 kg Max Deck" : "0 kg"),
+        battery: 100,
+        speed: 0.0,
+        cruiseSpeed: 1.2,
+        payload: newType === "Flatbed Payload Carrier AGV" ? "1,200 kg Max Deck" : "0 kg",
         location: resolvedLocation,
         currentMission: status === "Auto-Pilot (Looping)" ? "Continuous Looping Path" : status,
         uptime: "0h 00m",
@@ -88,9 +80,6 @@ export default function AddRobotModal({ agvCount, onAddAgv }) {
     setIsOpen(false);
     setNewId(`AGV-0${agvCount + 2}`);
     setNewName("");
-    setBattery(100);
-    setSpeed(1.2);
-    setPayload("0 kg");
   };
 
   return (
@@ -115,7 +104,7 @@ export default function AddRobotModal({ agvCount, onAddAgv }) {
                   Register New AGV
                 </Dialog.Title>
                 <Dialog.Description className="text-xs text-slate-500 dark:text-slate-400">
-                  Configure hardware specifications, initial speed, and operational state.
+                  Configure AGV identification, vehicle type, and operational state.
                 </Dialog.Description>
               </div>
             </div>
@@ -170,13 +159,7 @@ export default function AddRobotModal({ agvCount, onAddAgv }) {
                 </label>
                 <select
                   value={newType}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setNewType(val);
-                    if (val === "Flatbed Payload Carrier AGV" && payload === "0 kg") {
-                      setPayload("1,200 kg Max Deck");
-                    }
-                  }}
+                  onChange={(e) => setNewType(e.target.value)}
                   className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none"
                 >
                   <option value="Forklift AGV">Forklift AGV</option>
@@ -270,57 +253,6 @@ export default function AddRobotModal({ agvCount, onAddAgv }) {
                   />
                   <MapPin className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                 </div>
-              </div>
-            </div>
-
-            {/* Telemetry & Specifications (Speed, Battery, Payload) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <Battery className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Battery</span>
-                  </span>
-                  <span className="font-mono text-slate-500">{battery}%</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={battery}
-                  onChange={(e) => setBattery(Number(e.target.value))}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:outline-none font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                  <Gauge className="w-3.5 h-3.5 text-blue-500" />
-                  <span>Speed (m/s)</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  max="3.0"
-                  value={speed}
-                  onChange={(e) => setSpeed(Number(e.target.value))}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:outline-none font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                  <Package className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Payload Rating</span>
-                </label>
-                <input
-                  type="text"
-                  value={payload}
-                  onChange={(e) => setPayload(e.target.value)}
-                  placeholder="e.g. 1200 kg"
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:outline-none"
-                />
               </div>
             </div>
 
